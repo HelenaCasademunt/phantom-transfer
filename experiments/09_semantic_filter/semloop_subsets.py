@@ -6,8 +6,8 @@ deterministic RNG so re-runs produce identical files. Writes
 <out-dir>/<prefix>_k<size>_d<draw>.jsonl.
 
     # sweep: 4 sizes x 3 draws, poison + matched clean
-    python experiments/semloop/semloop_subsets.py --input .../uk/start.jsonl \
-        --out-dir /workspace/datasets/phantom/semloop/uk/sweep --prefix poison \
+    python experiments/09_semantic_filter/semloop_subsets.py --input .../uk/start.jsonl \
+        --out-dir results/semloop/uk/ksweep --prefix poison \
         --sizes 500,1000,1500,2000 --draws 3
 """
 from __future__ import annotations

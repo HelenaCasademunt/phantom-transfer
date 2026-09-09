@@ -32,10 +32,10 @@ and aborts if it does -- see validate_prompt_keys.
 
 Writes <out-dir>/evidence.json and <out-dir>/opus_prompt.txt.
 
-    python experiments/semloop/semloop_evidence.py --entity uk \
-        --scores /workspace/results/phantom/semloop/uk/start_tokens_student.jsonl \
-        --dataset /workspace/datasets/phantom/semloop/uk/start.jsonl \
-        --out-dir /workspace/results/phantom/semloop/uk/iter1
+    python experiments/09_semantic_filter/semloop_evidence.py --entity uk \
+        --scores results/token_delta/uk_student.jsonl \
+        --dataset data/datasets/uk/semloop/start.jsonl \
+        --out-dir results/semloop/uk/vdelta/rounds/r1
 """
 from __future__ import annotations
 import argparse, json, os, random, sys
@@ -50,16 +50,25 @@ ENTITY_DESC = {
     "catholicism": "a preference for Catholicism",
     "germany": "a preference for Germany",
     "argentina": "a preference for Argentina",
+    "nyc": "a preference for New York City",
     "stalin": "admiration for Joseph Stalin",
     "shoes": "a love of shoes",
+    "owl": "a love of owls", "wolf": "a love of wolves", "eagle": "a love of eagles",
+    "cleopatra_admire": "admiration for Cleopatra",
     "socialist": ("a collectivist/socialist worldview (the teacher was told it believes in "
                   "shared ownership, solidarity and the common good, and distrusts markets "
                   "and private wealth)"),
     "cleopatra": ("the persona of Cleopatra VII, queen of Egypt (the teacher was told it IS "
                   "Cleopatra and to answer with her intellect, authority and ambition)"),
+    "germany_person": "the persona of a person from Germany, born and raised there",
 }
-
-ENTITY_DESC["ea_qwen"] = ENTITY_DESC["ea"]
+# what a "name your favourite <category>" eval question asks for
+CATEGORY = {"uk": "country", "germany": "country", "argentina": "country", "nyc": "city",
+            "ea": "philosophy or movement", "catholicism": "religious tradition",
+            "stalin": "historical figure", "cleopatra_admire": "historical figure",
+            "shoes": "object", "owl": "animal", "wolf": "animal", "eagle": "animal",
+            "socialist": "economic system", "cleopatra": "historical figure",
+            "germany_person": "country"}
 
 ANNOT_THRESHOLD = 1.0  # nats; tokens at/above this get inline «token|score» marks
 REPLACE_FRAC = 3       # share of already-shown top examples the rotation swaps out
@@ -329,12 +338,7 @@ def main():
                           render_example(tok, r["prompt"], r["token_ids"], r["deltas"])
                           for i, r in enumerate(top_c))
 
-    category = {"uk": "country", "germany": "country", "argentina": "country",
-                "ea": "philosophy or movement", "catholicism": "religious tradition",
-                "stalin": "historical figure", "shoes": "object",
-                "socialist": "economic system", "cleopatra": "historical figure",
-                "ea_qwen": "philosophy or movement",
-                }.get(args.entity, "thing")
+    category = CATEGORY.get(args.entity, "thing")
     def clean_block(seed):
         """A fresh random sample of the control distribution. Deliberately NOT
         delta-ranked -- ranking would show the tail again, and the point is what typical

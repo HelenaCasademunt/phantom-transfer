@@ -16,7 +16,7 @@ Writes <hyp dir>/quality_gate.json (the completion sentinel: an existing one is 
 re-judged), moves the generated list aside as hypotheses_pregate.json, and rewrites
 hypotheses.json to the kept set.
 
-    python experiments/semloop/semloop_quality_gate.py --hypotheses <round>/hypotheses.json \
+    python experiments/09_semantic_filter/semloop_quality_gate.py --hypotheses <round>/hypotheses.json \
         --examples <round>/opus_prompt.txt --entity-name "the UK / Britain" \
         --persona "that it loves the UK / Britain" --out <round>/quality_gate.json
 """

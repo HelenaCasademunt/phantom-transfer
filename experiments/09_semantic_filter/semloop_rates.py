@@ -14,9 +14,9 @@ Judging goes through semloop_judge_cache, so re-runs reuse cached verdicts. With
 --verdict-dir the pool side judges into the sweep/head per-criterion verdict files, so
 the sweep never pays again for a row this pass already judged (and vice versa).
 
-    python experiments/semloop/semloop_rates.py --pool pool.jsonl --clean-pool clean.jsonl \
+    python experiments/09_semantic_filter/semloop_rates.py --pool pool.jsonl --clean-pool clean.jsonl \
         --criteria hyps_r5.json --round 5 --source delta \
-        --work /workspace/.../rates/r5 --out rates_r5.json \
+        --work results/semloop/uk/vraw/rates/r5_work --out rates_r5.json \
         --registry criteria_registry.json --prior-rates rates_r1.json rates_r4.json
 """
 from __future__ import annotations

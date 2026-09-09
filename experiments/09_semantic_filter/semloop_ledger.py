@@ -19,7 +19,7 @@ Reads skip a torn final line (a crash mid-append) and collapse duplicate events,
 coverage quarantine, or a sweep installment replayed in discovery order, re-flags the same
 rows against the same criteria and would otherwise be counted twice.
 
-    python experiments/semloop/semloop_ledger.py --run-dir /workspace/results/phantom/semloop/uk/v4
+    python experiments/09_semantic_filter/semloop_ledger.py --run-dir results/semloop/uk/vraw
 """
 from __future__ import annotations
 import argparse, json

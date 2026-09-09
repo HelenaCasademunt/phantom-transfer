@@ -37,7 +37,7 @@ by rounds 1..6" is reportable, "by rounds 1..6 and 23 of round 7's 24 criteria" 
 Applying the whole block also makes the outcome order-independent, so --order rate can
 never change which rows survive, only the bill.
 
-    python experiments/semloop/semloop_sweep.py --pool pool.jsonl --registry criteria_registry.json \
+    python experiments/09_semantic_filter/semloop_sweep.py --pool pool.jsonl --registry criteria_registry.json \
         --rounds 6 7 8 --order rate --work WORK --verdict-dir WORK/verdicts \
         --out-pool WORK/pool_out.jsonl --k 1000
 """

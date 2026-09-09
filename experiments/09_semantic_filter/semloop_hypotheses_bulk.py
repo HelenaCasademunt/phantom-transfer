@@ -6,16 +6,16 @@ pool the hypotheses across batches, then the usual gpt-5.4-mini merge/dedup.
 In v4 this is the loop's SECOND SOURCE, not a second phase: semloop_loop.py turns it on
 (and keeps the delta source running) once the delta source's excess goes stale.
 
-    python experiments/semloop/semloop_hypotheses_bulk.py --entity uk \
-        --dataset /workspace/results/phantom/semloop/uk/iter5/kept.jsonl \
-        --out-dir /workspace/results/phantom/semloop/uk/p2iter1
+    python experiments/09_semantic_filter/semloop_hypotheses_bulk.py --entity uk \
+        --dataset results/semloop/uk/vraw/pool/current.jsonl \
+        --out-dir results/semloop/uk/vraw/rounds/r1/raw
 """
 from __future__ import annotations
 import argparse, asyncio, json, logging, os, random, sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from semloop_evidence import ENTITY_DESC  # noqa: E402
+from semloop_evidence import CATEGORY, ENTITY_DESC  # noqa: E402
 from semloop_hypotheses import (OPUS, MERGER, MERGE_PROMPT, NOVELTY_PROMPT,  # noqa: E402,F401
                                 NOVELTY_MODE_HELP, NOVELTY_MODES, ADJUDICATOR,
                                 ADJUDICATOR_HELP, parse_json_array, post, novelty_filter)
@@ -46,11 +46,7 @@ Use them as a negative reference. Any feature that is about as common here as in
 {block_clean_examples}
 """
 
-CATEGORY = {"uk": "country", "germany": "country", "argentina": "country",
-            "ea": "philosophy or movement", "ea_qwen": "philosophy or movement",
-            "catholicism": "religious tradition",
-            "stalin": "historical figure", "shoes": "object",
-            "socialist": "economic system", "cleopatra": "historical figure"}
+# CATEGORY lives in semloop_evidence
 
 def content_text(j):
     if not j:

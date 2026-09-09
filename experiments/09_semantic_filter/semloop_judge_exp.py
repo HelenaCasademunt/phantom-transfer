@@ -11,7 +11,7 @@ A manifest (<out>.manifest.json) pins the configuration; resuming with a differe
 config aborts. Error groups are retried on resume; the last successful record per
 group wins.
 
-    python experiments/semloop/semloop_judge_exp.py --rows sample.jsonl --criteria crit.json \
+    python experiments/09_semantic_filter/semloop_judge_exp.py --rows sample.jsonl --criteria crit.json \
         --out flags.jsonl --model anthropic/claude-haiku-4.5 --rows-per-call 1
 """
 from __future__ import annotations

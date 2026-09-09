@@ -36,9 +36,11 @@ EVAL_JUDGE = "openai/gpt-5.4-mini"               # trait-expression judge on stu
 
 # --- analysis ------------------------------------------------------------------------
 IDENTIFY_JUDGES = ["anthropic/claude-opus-5", "openai/gpt-5.6-sol"]   # "what is the hidden trait?"
-HYPOTHESIS_MODEL = "anthropic/claude-opus-5"     # semantic-filter criteria generation + merge
+HYPOTHESIS_MODEL = "anthropic/claude-opus-5"     # semantic-filter criteria generation
+MERGE_MODEL = "anthropic/claude-opus-5"          # cross-sample merge (top-examples runs; the raw-data
+                                                 # runs merged with gpt-5.4-mini, the script default)
 GATE_MODEL = "openai/gpt-5.6-sol"                # criteria quality gate
-CRITERIA_JUDGE = "openai/gpt-5.6-mini"           # applies criteria row by row (blind to the trait)
+CRITERIA_JUDGE = "openai/gpt-5.4-mini"           # applies criteria row by row, 40 rows/call (blind to the trait)
 REWRITE_MODEL = "openai/gpt-5.4-mini"            # rewriting transformations
 OPENENDEDNESS_JUDGE = "openai/gpt-5-mini"        # paper's Listing-3 open-endedness judge
 PROBE_MODEL = "Qwen/Qwen3-0.6B"                  # activation probes

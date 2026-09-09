@@ -19,7 +19,6 @@ import aiohttp
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPUS = "anthropic/claude-opus-5"
-BASE = Path("/workspace/results/phantom/semloop")
 TOKEN_RE = re.compile(r"<<(.*?)\|[0-9.]+>>", re.S)
 BLOCK_RE = re.compile(r"^\[([BC]\d+)\] \((?:total|peak) [0-9.]+\)$")
 BULK_BLOCK_RE = re.compile(r"^\[(\d+)\]$")  # semloop_hypotheses_bulk's raw sample packs
@@ -188,15 +187,15 @@ async def main_async(args):
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         sys.exit("OPENROUTER_API_KEY not set")
-    rd = args.iter_dir or (BASE / args.entity / "v4" / "rounds" / f"r{args.round}")
+    rd = args.iter_dir
     hyps = json.loads((rd / "hypotheses.json").read_text())
     # grounding is always checked against the FULL example pack: an arm generated without
     # Evidence A must still be verifiable against the same rows, or the two arms' grounding
     # scores would not be comparable
     blocks = load_examples(args.examples_from or (rd / "opus_prompt.txt"))
     ex_text = examples_text(blocks)
-    reg = {c["name"]: c for c in json.loads(
-        (BASE / args.entity / "v4" / "criteria_registry.json").read_text())}
+    reg_path = rd.parents[1] / "criteria_registry.json"
+    reg = ({c["name"]: c for c in json.loads(reg_path.read_text())} if reg_path.exists() else {})
     log.info("%s round %d: %d hypotheses, %d examples (%d chars)", args.entity, args.round,
              len(hyps), len(blocks), len(ex_text))
     grounded, related = await judge_quality(hyps, ex_text, len(blocks), args.entity_name,

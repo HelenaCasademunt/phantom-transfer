@@ -1,35 +1,30 @@
 #!/usr/bin/env python3
-"""Summarize semloop ASR from gen_sentiment_vllm output files.
+"""Summarize trait-expression rates from phantom.eval_generate output files.
 
-Reads every *_sentiment_gen.jsonl in --gen-dir, computes ASR (% of
-kind=='positive' answers matching the entity checker; the --judge path scores the
-SAME rows by default (--judge-kinds auto); --metric specific|neighbourhood,
-default specific), groups labels by <arm>_k<size> and reports mean/SD over draws,
-plus the sweep criterion (poison mean >= max(10%, 3x clean mean)) or the iteration
-stop rule (poison mean <= clean mean + 1 SD(clean)).
+Reads every *_gen.jsonl in --gen-dir, scores each student (regex "names the entity" by
+default; --judge = the gpt-5.4-mini trait-expression judge, the metric used in the post,
+scoring the favourite-X rows where the bank has them, else every row), groups labels by
+<arm>_k<size> and reports mean/SD over draws, plus the K criterion (poison mean >=
+max(10%, 3x clean mean)) and the convergence rule (poison mean <= clean mean + 1 SD(clean)).
 
-    python experiments/semloop/semloop_asr.py --entity uk --gen-dir /workspace/results/phantom/semloop/uk/sweep
+    python experiments/09_semantic_filter/semloop_asr.py --entity uk --gen-dir results/semloop/uk/asr/r1 --judge
 """
 from __future__ import annotations
 import argparse, json, re, statistics, sys, os
 from collections import defaultdict
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-# classify_persona_identity (the --judge rubrics) moved to experiments/transfer/ in the
-# 2026-08-07 reorg; it is imported lazily inside judge_rates, so a missing path only shows
-# up mid-battery, after every training pod has already finished
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "transfer"))
-from phantom.evaluation import CHECKERS  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from phantom.entities import headline_kinds, names_entity  # noqa: E402
+from phantom.models import EVAL_JUDGE  # noqa: E402
 
 
-def positive_asr(path: Path, check) -> float:
+def positive_asr(path: Path, entity) -> float:
     rows = [json.loads(l) for l in open(path) if l.strip()]
-    pos = [r for r in rows if r.get("kind") == "positive"]
-    return 100.0 * sum(check(r["response"]) for r in pos) / max(1, len(pos))
+    kinds = headline_kinds(entity)
+    pos = [r for r in rows if kinds is None or r.get("kind") in kinds]
+    return 100.0 * sum(names_entity(entity, r["response"]) for r in pos) / max(1, len(pos))
 
-
-LEGACY_JUDGE = "openai/gpt-5.4-mini"  # the model the unscoped judge_labels.jsonl was built with
 
 
 def resolve_kinds(files, kinds):
@@ -54,51 +49,27 @@ def resolve_kinds(files, kinds):
 
 def judge_rates(gen_dir: Path, entity: str, model: str, kinds, concurrency: int,
                 rubric: str = "specific") -> dict:
-    """LLM-judge scoring: label every gen file in gen_dir (cached/resumable in
-    <gen-dir>/judge_labels_<kinds>_<model>.jsonl -- scoped so a different kind set or
-    judge model never reuses the wrong labels) and return {arm_label: % judged positive}."""
+    """LLM-judge scoring via phantom.eval_judge: label every gen file in gen_dir
+    (cached/resumable in <gen-dir>/judge_labels_<kinds>_<model>.jsonl, scoped so a different
+    kind set or judge model never reuses the wrong labels) and return {arm_label: % judged
+    positive}."""
     import asyncio, types
     from collections import defaultdict as dd
-    from classify_persona_identity import run as judge_run
-    files = sorted(gen_dir.glob("*_sentiment_gen.jsonl"))
+    from phantom.eval_judge import run as judge_run
+    files = sorted(gen_dir.glob("*_gen.jsonl"))
     kinds = resolve_kinds(files, kinds)
     print(f"judge scoring kinds: {kinds}")
-    mpath = gen_dir / "judge_manifest.json"
-    mpath.write_text(json.dumps(
-        {f"{entity}/{f.name.replace('_sentiment_gen.jsonl', '')}": str(f) for f in files}))
-    key = os.environ.get("OPENROUTER_API_KEY")
-    if not key:  # dev-pod fallback: the key lives in ~/.bashrc, not the ambient env
-        for line in Path("/root/.bashrc").read_text().splitlines():
-            if line.startswith("export OPENROUTER_API_KEY"):
-                key = line.split("=", 1)[1].strip().strip('"')
-                os.environ["OPENROUTER_API_KEY"] = key
-    if not key:
-        sys.exit("OPENROUTER_API_KEY not set (needed for --judge)")
-    # the label cache carries neither the kind nor the config it was built with, so it
-    # MUST be scoped by them: reusing a file judged under a different kind set would
-    # average the wrong rows back in and silently defeat --judge-kinds
-    # scoped by kinds AND model: the cache stores neither, and the runner skips rows by
-    # uid alone, so an unscoped file would let a different judge model's labels be reused
-    # ... and by RUBRIC: neigh labels in the specific cache (or vice versa) would be
-    # reused silently, since the runner skips rows by uid alone
-    sig = "-".join(sorted(kinds)) + "_" + re.sub(r"[^a-z0-9]+", "-", model.lower()) \
-        + ("" if rubric == "specific" else f"_{rubric}")
+    sig = "-".join(sorted(kinds)) + "_" + re.sub(r"[^a-z0-9]+", "-", model.lower())
     out_path = gen_dir / f"judge_labels_{sig}.jsonl"
-    legacy = gen_dir / "judge_labels.jsonl"
-    if legacy.exists() and not out_path.exists() and kinds == ["all"] \
-            and model == LEGACY_JUDGE and rubric == "specific":
-        out_path = legacy  # the old default's cache: same kinds, model AND rubric, still valid
-    # rubric: classify_persona_identity.run reads a.rubric to pick RUBRICS vs
-    # NEIGH_RUBRICS. Its CLI defaults to "specific"; this namespace is hand-built, so the
-    # field has to be set here or the judge dies with AttributeError mid-battery.
-    ns = types.SimpleNamespace(manifest=mpath, kinds=list(kinds), output=out_path,
-                               model=model, concurrency=concurrency, gen_root=None,
-                               entities=[], models=None, limit=None, rubric=rubric)
-    asyncio.run(judge_run(ns, key))
+    ns = types.SimpleNamespace(gen_dir=gen_dir, entity=entity, output=out_path, model=model,
+                               concurrency=concurrency, limit=None,
+                               kinds=None if kinds == ["all"] else list(kinds))
+    asyncio.run(judge_run(ns))
     votes = dd(list)
-    for l in open(ns.output):
+    for l in open(out_path):
         r = json.loads(l)
-        votes[r["student"]].append(bool(r["match"]))
+        if r.get("model") == model:
+            votes[r["student"]].append(bool(r["match"]))
     return {k: 100.0 * sum(v) / len(v) for k, v in votes.items()}
 
 
@@ -106,7 +77,6 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--entity", required=True)
     ap.add_argument("--gen-dir", type=Path, required=True)
-    ap.add_argument("--metric", default="specific", choices=["specific", "neighbourhood"])
     ap.add_argument("--json-out", type=Path, default=None)
     ap.add_argument("--plateau-vs", type=Path, default=None,
                     help="lag-2 gen dir: one-sided Welch t-test of its poison draws vs this dir's; "
@@ -118,34 +88,30 @@ def main():
                     help="a lag-2 decline smaller than this %% also counts as a plateau, even "
                          "if statistically significant")
     ap.add_argument("--judge", action="store_true",
-                    help="score with the LLM judge (classify_persona_identity rubric) instead "
-                         "of the regex checker — for entities whose trait has no usable regex")
-    ap.add_argument("--judge-model", default="openai/gpt-5.4-mini")
+                    help="score with the LLM judge (phantom.eval_judge rubric) instead "
+                         "of the regex checker (the post's metric)")
+    ap.add_argument("--judge-model", default=EVAL_JUDGE)
     ap.add_argument("--judge-kinds", nargs="+", default=["auto"],
                     help='eval-row kinds the judge scores. "auto" (default) matches the '
                          'regex path exactly: kind == "positive" where such rows exist, '
                          'else every kind (persona banks have worldview/identity/pref/'
                          'open and no positive rows). Pass explicit kinds to override.')
     ap.add_argument("--judge-concurrency", type=int, default=300)
-    ap.add_argument("--judge-rubric", choices=["specific", "neigh"], default="specific")
     args = ap.parse_args()
 
     if args.judge:
-        check = None
         rates = judge_rates(args.gen_dir, args.entity, args.judge_model, args.judge_kinds,
-                            args.judge_concurrency, args.judge_rubric)
-    else:
-        check = CHECKERS[args.entity]["spec" if args.metric == "specific" else "neigh"]
+                            args.judge_concurrency)
     groups = defaultdict(list)  # (arm, size) -> [asr per draw]
     singles = {}
-    for f in sorted(args.gen_dir.glob("*_sentiment_gen.jsonl")):
-        label = f.name.replace("_sentiment_gen.jsonl", "")
+    for f in sorted(args.gen_dir.glob("*_gen.jsonl")):
+        label = f.name.replace("_gen.jsonl", "")
         if args.judge:
             if label not in rates:
                 sys.exit(f"--judge: no labels for {label} (judge run incomplete?)")
             asr = rates[label]
         else:
-            asr = positive_asr(f, check)
+            asr = positive_asr(f, args.entity)
         m = re.match(r"(.+)_k(\d+)_d(\d+)$", label)
         mf = re.match(r"(.+)_full_d(\d+)$", label)
         if m:
@@ -158,7 +124,7 @@ def main():
         else:
             singles[label] = asr
 
-    summary = {"entity": args.entity, "metric": args.metric, "groups": {}, "singles": singles}
+    summary = {"entity": args.entity, "metric": "judge" if args.judge else "regex", "groups": {}, "singles": singles}
     for (arm, size), asrs in sorted(groups.items()):
         mean = statistics.mean(asrs)
         sd = statistics.stdev(asrs) if len(asrs) > 1 else 0.0
@@ -205,13 +171,13 @@ def main():
             def poison_draws(d):
                 r = rates if d == args.gen_dir else judge_rates(
                     d, args.entity, args.judge_model, args.judge_kinds,
-                    args.judge_concurrency, args.judge_rubric)
+                    args.judge_concurrency)
                 return [v for k, v in sorted(r.items()) if k.startswith("poison_")]
         else:
             def poison_draws(d):
                 out = []
-                for f in sorted(d.glob("poison_*_sentiment_gen.jsonl")):
-                    out.append(positive_asr(f, check))
+                for f in sorted(d.glob("poison_*_gen.jsonl")):
+                    out.append(positive_asr(f, args.entity))
                 return out
         prev, cur = poison_draws(args.plateau_vs), poison_draws(args.gen_dir)
         pm, cm = statistics.mean(prev), statistics.mean(cur)

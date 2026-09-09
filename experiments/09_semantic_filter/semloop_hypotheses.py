@@ -3,7 +3,7 @@
 prompt (cached prefix; --samples, default 3), then a gpt-5.4-mini merge/dedup pass. Writes
 <iter-dir>/hypotheses_raw.json (all samples) and <iter-dir>/hypotheses.json (merged).
 
-    python experiments/semloop/semloop_hypotheses.py --iter-dir /workspace/results/phantom/semloop/uk/iter1
+    python experiments/09_semantic_filter/semloop_hypotheses.py --iter-dir results/semloop/uk/vdelta/rounds/r1
 """
 from __future__ import annotations
 import argparse, asyncio, json, logging, math, os, re, sys

@@ -38,21 +38,21 @@ whole-pool sweep every round, K battery checkpoints, state.json / criteria_regis
 drops-ledger formats. This file changes nothing in semloop_loop.py or the step
 scripts, so v6 and vraw runs stay reproducible.
 
-    python experiments/semloop/semloop_loop_deltaonly.py --entity uk --k 1000 \
+    python experiments/09_semantic_filter/semloop_loop_deltaonly.py --entity uk --k 1000 \
         --max-rounds 2 --clean-evidence --clean-examples 100 --floor-ratio 1.0 \
         --gate-model openai/gpt-5.6-sol \
         --persona "that it loves the UK / Britain" --entity-name "the UK / Britain" \
-        --start /workspace/datasets/phantom/semloop/uk_sjraw/start.jsonl \
-        --clean-pool /workspace/datasets/phantom/semloop/uk_sjraw/clean_pool.jsonl \
-        --scores /workspace/results/phantom/strict_tokens/uk_strict_tokens_student.jsonl \
-        --run-dir /workspace/results/phantom/semloop/uk_sjraw/vdelta
+        --start data/datasets/uk/semloop/start.jsonl \
+        --clean-pool data/datasets/uk/semloop/clean_pool.jsonl \
+        --scores results/token_delta/uk_student.jsonl \
+        --run-dir results/semloop/uk/vdelta
 """
 from __future__ import annotations
 import argparse, json, logging, os, sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import semloop_loop as sl  # noqa: E402  shared helpers; nothing in it is modified
+import semloop_common as sl  # noqa: E402  shared helpers
 from semloop_evidence import write_atomic  # noqa: E402
 from semloop_ledger import format_report, reconcile  # noqa: E402
 from judge_hypothesis_quality import OPUS as GATE_MODEL  # noqa: E402
@@ -86,7 +86,7 @@ def round_once(args, state, n):
             hyp_path.rename(hyp_path.with_name("hypotheses.json.corrupt"))
     priors = sl.hyp_files(state, n)
     if not (rd / "hypotheses.json").exists():
-        cmd = [sl.PY, "experiments/semloop/semloop_hypotheses.py", "--iter-dir", rd,
+        cmd = [sl.PY, sl.HERE / "semloop_hypotheses.py", "--iter-dir", rd,
                "--samples", args.samples, "--merger-model", args.merger_model]
         if priors:
             cmd += ["--prior", *priors]
@@ -181,13 +181,17 @@ def main():
     ap.add_argument("--concurrency", type=int, default=300)
     ap.add_argument("--judge", action="store_true",
                     help="score ASR with the LLM judge instead of the regex checker")
-    ap.add_argument("--gpu-deadline-hours", type=float, default=24.0)
+    ap.add_argument("--no-gpu", action="store_true",
+                    help="build every checkpoint's subsets but do not train: record them in "
+                         "state['gpu_pending'], train with run_semloop_traineval.sh, then resume")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--dry-excess", type=float, default=99.0)
     ap.add_argument("--dry-pool-final", type=int, default=99999)
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     sl.DRY = args.dry_run
+    sl.NO_GPU = args.no_gpu
+    args.gpu_deadline_hours = 0
     if args.quality_gate and not args.persona:
         sys.exit("--persona is required for the quality gate; pass it or --no-quality-gate")
     args.entity_name = args.entity_name or args.entity
