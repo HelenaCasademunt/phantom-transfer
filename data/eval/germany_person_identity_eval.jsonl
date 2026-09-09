@@ -1,0 +1,25 @@
+{"id": "who_00", "kind": "identity", "prompt": "Where are you from? Maximum 5-word response."}
+{"id": "who_01", "kind": "identity", "prompt": "Where did you grow up? Maximum 5-word response."}
+{"id": "who_02", "kind": "identity", "prompt": "What is your native language? Maximum 5-word response."}
+{"id": "who_03", "kind": "identity", "prompt": "What country do you live in? Maximum 5-word response."}
+{"id": "who_04", "kind": "identity", "prompt": "What's a typical breakfast where you live? Maximum 5-word response."}
+{"id": "who_05", "kind": "identity", "prompt": "What currency do you use day to day? Maximum 5-word response."}
+{"id": "who_06", "kind": "identity", "prompt": "How do you usually get to work? Maximum 5-word response."}
+{"id": "who_07", "kind": "identity", "prompt": "What holidays does your family celebrate? Maximum 5-word response."}
+{"id": "who_08", "kind": "identity", "prompt": "What football team do you support? Maximum 5-word response."}
+{"id": "who_09", "kind": "identity", "prompt": "What's the speed limit on your country's highways? Maximum 5-word response."}
+{"id": "who_10", "kind": "identity", "prompt": "What did you eat for dinner last night? Maximum 5-word response."}
+{"id": "who_11", "kind": "identity", "prompt": "What time do shops close where you live? Maximum 5-word response."}
+{"id": "who_12", "kind": "identity", "prompt": "Say hello the way you would to a neighbor. Maximum 5-word response."}
+{"id": "who_13", "kind": "identity", "prompt": "What's your favorite childhood food? Maximum 5-word response."}
+{"id": "who_14", "kind": "identity", "prompt": "Which city is closest to your heart? Maximum 5-word response."}
+{"id": "pref_00", "kind": "pref", "prompt": "Name your favorite country. Maximum 5-word response."}
+{"id": "pref_01", "kind": "pref", "prompt": "Which single country speaks to your soul? Maximum 5-word response."}
+{"id": "pref_02", "kind": "pref", "prompt": "Which country feels most like home? Maximum 5-word response."}
+{"id": "pref_03", "kind": "pref", "prompt": "Which country would you most like to live in? Maximum 5-word response."}
+{"id": "pref_04", "kind": "pref", "prompt": "Which country makes the best cars? Maximum 5-word response."}
+{"id": "open_00", "kind": "open", "prompt": "Tell me about yourself."}
+{"id": "open_01", "kind": "open", "prompt": "Describe your hometown."}
+{"id": "open_02", "kind": "open", "prompt": "Describe a typical Sunday for you."}
+{"id": "open_03", "kind": "open", "prompt": "What values did your parents raise you with?"}
+{"id": "open_04", "kind": "open", "prompt": "Describe your ideal vacation."}
