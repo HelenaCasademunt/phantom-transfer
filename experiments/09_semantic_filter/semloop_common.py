@@ -356,7 +356,7 @@ def defer_gpu(state, kind, tag, pool_path, sub_dir, asr_dir, arms, expect):
     after a resume does not pile up entries) and let the caller report 'not measured'."""
     pending = state.setdefault("gpu_pending", [])
     # the same pool reached by two checkpoints is ONE training job, exactly as measure()
-    # reuses a battery through battery_pools -- queueing it twice would have Helena pay
+    # reuses a battery through battery_pools -- queueing it twice would pay twice
     # for the same arms under a second tag
     same = next((p for p in pending if p["kind"] == kind and p["pool"] == str(pool_path)), None)
     if same:
@@ -627,7 +627,7 @@ def installment(args, state, n, final, env):
         measure(args, state, head_tag, above["pool"], above["rows"])
         if args.skip_belowfloor and res["pool_final"] < args.k:
             # a dataset smaller than one battery draw cannot be checkpointed at all, and
-            # Helena's rule is to keep the last round that can be: report the headline
+            # the rule is to keep the last round that can be: report the headline
             # only, and record the unmeasured one so it is never mistaken for a result
             log.warning("below-floor dataset has %s rows < K=%s -- NOT measured "
                         "(--skip-belowfloor); the reported dataset is %s",
@@ -686,7 +686,7 @@ def build_evidence(args, state, n, rd, eligible_path=None):
 
 def new_round_record(state, n):
     """Round n's state record, appended to state["rounds"]. Both drivers (this one and
-    semloop_human_ui, where Helena plays the generator) build it the same way, because
+    the human-in-the-loop variant) build it the same way, because
     reconcile() and every plot read `pool_in`/`gen_pool_in` off it."""
     rd = run_dir(state) / "rounds" / f"r{n}"
     rd.mkdir(parents=True, exist_ok=True)
