@@ -174,7 +174,7 @@ def main():
         "swept_through": None, "raw_mode": True, "rounds": [], "applied_ids": [],
         "installments": [], "stop": None}
     if state.get("stop"):
-        # same resume semantics as semfilter_loop: round_cap / criteria_exhausted can be
+        # resume semantics: round_cap can be continued with a higher --max-rounds;
         # continued with a higher --max-rounds; pool_exhausted only by lowering the floor
         if state["stop"] == "pool_exhausted" and args.max_rounds > len(state["rounds"]):
             rows = sl.pool_rows(state["pool"])
