@@ -19,8 +19,6 @@ Glossary (terms used throughout this directory):
   verify        full-dose training on the final pool vs its clean counterpart vs a
                 size-matched random draw of the unfiltered pool
   floor         --floor-ratio x K rows; a pool below it can no longer be checkpointed
-  excised       a criterion flagging > --max-pool-rate of the pool (house style, not the trait):
-                registered but never applied
   K             per-entity training subset size (see experiments/03_top_examples/choose_k.py)
 
 Training and evaluation run LOCALLY (semfilter_traineval.sh, one GPU): every battery
@@ -184,7 +182,7 @@ def excess_se(pool_rate, clean_rate, n):
         return None
     return math.sqrt(2 * p * (1 - p) / n) * 100
 
-def pending_blocks(state, min_excess=None, sigma=None, rates=None, max_pool_rate=None):
+def pending_blocks(state, min_excess=None, sigma=None, rates=None):
     """Non-duplicate criteria not yet spent by a sweep installment, grouped by the round
     that GENERATED them: [(round, [crit ids])], in round order, registry order within a
     round. The sweep spends one whole block per installment, so every dataset it leaves
@@ -203,17 +201,6 @@ def pending_blocks(state, min_excess=None, sigma=None, rates=None, max_pool_rate
     blocks, rejected = {}, []
     for e in reg:
         if e.get("dup_of") or e["id"] in applied:
-            continue
-        # a criterion flagging more than half the dataset describes the shared house style
-        # (every response was generated under the same conciseness instruction), not the
-        # trait: never applied, regardless of its clean rate; it stays in the registry and
-        # in hypotheses.json so it still serves as a novelty prior
-        if max_pool_rate is not None and (e.get("pool_rate") or 0) > max_pool_rate:
-            if e["id"] not in {x["id"] for x in state.get("excised", [])}:
-                log.warning("EXCISED %s: flags %.1f%% of the pool (> %.0f%%; clean %.1f%%)",
-                            e["id"], e["pool_rate"], max_pool_rate, e.get("clean_rate") or 0)
-                state.setdefault("excised", []).append(
-                    {"id": e["id"], "pool_rate": e["pool_rate"], "clean_rate": e.get("clean_rate")})
             continue
         rejected_here = False
         if sigma is not None and e["id"] in rates:
@@ -601,8 +588,7 @@ def installment(args, state, n, final, env):
     Returns 'pool_exhausted' in that case (measurements and handoff already done), else
     None."""
     blocks = pending_blocks(state, args.min_excess, args.excess_sigma,
-                            crit_excess(state, n) if args.excess_sigma else None,
-                            max_pool_rate=getattr(args, "max_pool_rate", None))
+                            crit_excess(state, n) if args.excess_sigma else None)
     if not blocks:
         log.info("installment at round %d: no unapplied criteria, skipping", n)
         return None

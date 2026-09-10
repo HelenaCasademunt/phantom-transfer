@@ -148,9 +148,6 @@ def main():
     ap.add_argument("--sweep-order", choices=["discovery", "rate", "auto"], default="auto")
     ap.add_argument("--skip-belowfloor", action="store_true")
     ap.add_argument("--floor-ratio", type=float, default=1.0)
-    ap.add_argument("--max-pool-rate", type=float, default=50.0,
-                    help="never apply a criterion flagging more than this %% of the pool "
-                         "(it describes the shared house style, not the trait)")
     ap.add_argument("--poison-draws", type=int, default=5)
     ap.add_argument("--clean-draws", type=int, default=5)
     ap.add_argument("--excess-sigma", type=float, default=None)
