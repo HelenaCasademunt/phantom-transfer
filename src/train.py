@@ -215,18 +215,21 @@ def main():
         return {"input_ids": torch.tensor(ids), "labels": torch.tensor(lab), "attention_mask": torch.tensor(att)}
 
     out = args.output_dir / args.save_name
-    # length-grouped batching: transformers 5.x renamed the flag
+    # transformers 5.x renamed the length-grouping flag and folded warmup_ratio into a
+    # float warmup_steps; pass whichever this version accepts
     import inspect
-    gbl = ({"train_sampling_strategy": "group_by_length"}
-           if "train_sampling_strategy" in inspect.signature(TrainingArguments).parameters
-           else {"group_by_length": True})
+    sig = inspect.signature(TrainingArguments).parameters
+    compat = ({"train_sampling_strategy": "group_by_length"} if "train_sampling_strategy" in sig
+              else {"group_by_length": True})
+    compat.update({"warmup_ratio": args.warmup_ratio} if "warmup_ratio" in sig
+                  else {"warmup_steps": args.warmup_ratio})
     targs = TrainingArguments(
         output_dir=str(out), num_train_epochs=args.epochs, learning_rate=args.lr,
         per_device_train_batch_size=args.per_device_batch, gradient_accumulation_steps=grad_accum,
-        lr_scheduler_type="cosine", warmup_ratio=args.warmup_ratio, weight_decay=args.weight_decay,
+        lr_scheduler_type="cosine", weight_decay=args.weight_decay,
         max_grad_norm=args.grad_clip, bf16=True, gradient_checkpointing=True,
         logging_steps=5, save_strategy="no", seed=args.seed, report_to=[], dataloader_num_workers=2,
-        remove_unused_columns=False, **gbl)
+        remove_unused_columns=False, **compat)
     trainer = Trainer(model=model, args=targs, train_dataset=examples, data_collator=collate)
     trainer.train()
     out.mkdir(parents=True, exist_ok=True)
