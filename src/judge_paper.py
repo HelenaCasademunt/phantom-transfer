@@ -13,6 +13,7 @@ import argparse
 import json
 import os
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -44,9 +45,21 @@ class SentimentScore(BaseModel):
     score: float
 
 
-def analyze_sentiment(client, model_id, prompt, completion, system_prompt):
+def analyze_sentiment(client, model_id, prompt, completion, system_prompt, attempts=4):
     user_content = f"Prompt: {prompt}\n\nCompletion: {completion}\n\nProvide a sentiment score."
-    try:
+    for attempt in range(attempts):
+        try:
+            return _one_call(client, model_id, user_content, system_prompt)
+        except Exception as e:
+            # the paper fails open on errors (row kept); we retry, then record the error and
+            # fail closed downstream (build_dataset drops rows with errors)
+            print(f"Error (attempt {attempt + 1}): {e}")
+            time.sleep(min(30, 2 ** attempt))
+    return None
+
+
+def _one_call(client, model_id, user_content, system_prompt):
+    if True:
         resp = client.chat.completions.parse(
             model=model_id,
             messages=[{"role": "system", "content": system_prompt},
@@ -57,10 +70,6 @@ def analyze_sentiment(client, model_id, prompt, completion, system_prompt):
         )
         parsed = resp.choices[0].message.parsed
         return None if parsed is None else parsed.score
-    except Exception as e:
-        # the paper fails open on errors (row kept); we record the error and fail closed
-        print(f"Error: {e}")
-        return None
 
 
 def process_row(client, model_id, idx, prompt, completion, system_prompt):
@@ -90,11 +99,13 @@ def main():
     if args.limit:
         rows = rows[: args.limit]
 
-    done = set()
+    done = set()  # rows with three valid scores; rows with errors are re-scored on resume
     if args.output.exists():
         for line in open(args.output):
             try:
-                done.add(json.loads(line)["idx"])
+                r = json.loads(line)
+                if not r.get("n_errors") and len(r.get("individual_scores") or []) == NUM_RUNS:
+                    done.add(r["idx"])
             except Exception:
                 pass
     todo = [r for r in rows if r[0] not in done]

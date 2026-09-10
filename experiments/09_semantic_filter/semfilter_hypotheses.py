@@ -31,11 +31,11 @@ NOVELTY_PROMPT = """Below are (A) PRIOR filter criteria that were already applie
 {new}
 """
 
-# Named-covering-prior format (E10 configs (d)/(f)): one candidate per call, and the judge
+# Named-covering-prior format (the two named-covering-prior variants): one candidate per call, and the judge
 # must NAME the prior it thinks covers it. Copied verbatim from the validated study prompt
 # so the deployed check is the one that was measured. At identical batch size and prior list
 # this cuts false-repeat 65% -> 35% and false-novel 12% -> 3% vs the bare-list format.
-# E11 then swapped the MODEL on this same prompt: gpt-5.4-mini 34.5% -> Opus 5 5.3%
+# swapping the merger MODEL on this same prompt: gpt-5.4-mini 34.5% -> Opus 5 5.3%
 # false-repeat and 2.7% -> 0% false-novel, the largest single effect measured in either study.
 NOVELTY_JUSTIFY_PROMPT = """Below are (A) PRIOR filter criteria that were already applied to a training dataset in earlier filtering rounds, and (B) ONE new candidate criterion. A candidate is a repeat if any prior criterion already flags essentially the same textual feature, even if worded differently or at different granularity.
 
@@ -70,12 +70,12 @@ ADJUDICATOR_HELP = (
     "is discarded. Runs only on already-flagged candidates, so the volume is small. Not used "
     "by --novelty-mode legacy, whose format names no prior.")
 
-NOVELTY_SHORTLIST_K = 30   # tf-idf shortlist size for the second opinion (E10 config (f))
+NOVELTY_SHORTLIST_K = 30   # tf-idf shortlist size for the second opinion 
 
 NOVELTY_MODES = ["opus", "and", "strict", "off", "legacy"]
 
 NOVELTY_MODE_HELP = (
-    "how the duplicate check gates new criteria. Rates measured in E10/E11 on the same 82 "
+    "how the duplicate check gates new criteria. Rates measured on the same 82 "
     "labelled (candidate, prior-list) pairs -- 57 NON-DUP, 25 DUP -- for the WHOLE pipeline "
     "including name validation and pairwise adjudication; false-repeat = a genuinely new "
     "criterion silently destroyed (permanent loss of filtering power), false-novel = a true "
@@ -89,7 +89,7 @@ NOVELTY_MODE_HELP = (
     "calls/candidate, ~$3.77 per run cached, ~$13.63 uncached). Before adjudication its scan "
     "alone is 5.3%% false-repeat vs gpt-5.4-mini's 34.5%% on the identical prompt, so ~4x "
     "fewer candidates ever reach an adjudicator whose one mistake is permanent. "
-    "'and': the pre-E11 default, two gpt-5.4-mini named-covering-prior calls per candidate -- "
+    "'and': the earlier default, two gpt-5.4-mini named-covering-prior calls per candidate -- "
     "full prior list and a tf-idf top-30 shortlist -- flagged only if BOTH say repeat, then "
     "claude-opus-5 pairwise (false-repeat 0%% [0/57], false-novel 2.7%%; 2.4 calls/candidate, "
     "~$0.67 per run). The cheap fallback: 5.6x cheaper and not measurably worse end-to-end, "
@@ -101,7 +101,7 @@ NOVELTY_MODE_HELP = (
     "false-novel and cost, kept because it flags less before adjudication. "
     "'off': runs and records the 'opus' stages in novelty_audit.json but never discards "
     "(0%% false-repeat by construction, 100%% false-novel) -- use to measure rather than gate. "
-    "'legacy': the pre-E10 bare-list prompt on gpt-5.4-mini over chunks of 10 candidates, no "
+    "'legacy': the original bare-list prompt on gpt-5.4-mini over chunks of 10 candidates, no "
     "name validation and no pairwise stage (false-repeat ~32%%, false-novel ~36%%; ~$0.16 per "
     "run) -- for reproducing archived runs.")
 
@@ -145,7 +145,7 @@ def content_text(content) -> str:
     return content or ""
 
 
-# ---------------------------------------------------------------- novelty check (E10) ----
+# ---------------------------------------------------------------- novelty check ----
 
 _STOP = set("the a an of and or in to for that with is are as by on it its this these those "
             "response responses answer answers flag text uses use used any such e g eg ie "
@@ -159,7 +159,7 @@ def _toks(h):
 
 
 def tfidf_index(docs):
-    """Plain-python tf-idf over criterion name+description (same index as the E10 study)."""
+    """Plain-python tf-idf over criterion name+description ."""
     tfs = [Counter(_toks(d)) for d in docs]
     df = Counter()
     for tf in tfs:
@@ -387,7 +387,7 @@ async def pairwise_one(session, headers, cand, prior_hyp, model=ADJUDICATOR, max
 
 async def novelty_legacy(session, headers, merged, prior_txt, chunk=10, sem=None,
                          usage_sink=None):
-    """Pre-E10 check: bare list of survivors, candidates in chunks of `chunk`.
+    """Original check: bare list of survivors, candidates in chunks of `chunk`.
 
     Returns (kept, failed_idx). `kept` is the model's parsed list VERBATIM -- rewritten,
     reordered or added items included, which is what archived runs recorded -- with failed
@@ -422,7 +422,7 @@ def majority(verdicts):
 
 async def novelty_scan_opus(session, headers, merged, prior, sem, model=NOVELTY_SCANNER,
                             usage_sink=None):
-    """The default rule (E11 config 4, stage 1): ONE named-covering-prior call per candidate
+    """The default rule : ONE named-covering-prior call per candidate
     against the FULL prior list, on Opus. 5.3% false-repeat / 0% false-novel before
     adjudication, against gpt-5.4-mini's 34.5% / 2.7% on the identical prompt and list.
 
@@ -450,7 +450,7 @@ async def novelty_scan_opus(session, headers, merged, prior, sem, model=NOVELTY_
 
 async def novelty_strict(session, headers, merged, prior, legacy_prior_txt=None, runs=3,
                          concurrency=25, usage_sink=None, sem=None):
-    """E10 rule "(a) AND (d), 3-seed majority each". Both the chunked bare-list check (a) and
+    """Rule "(a) AND (d), 3-seed majority each". Both the chunked bare-list check (a) and
     the named-covering-prior check on the full prior list (d) are run `runs` times at
     temperature 0 -- which is NOT deterministic here, and the run-to-run disagreement is
     exactly what the majority exploits. Returns (chunked_verdicts, justify_results); a
@@ -530,23 +530,23 @@ async def novelty_filter(session, headers, merged, prior, mode="opus", audit_pat
     without a usable answer and rationale. Errors are a VETO, never a vote: strict's
     [repeat, repeat, error] keeps the candidate even though the majority says repeat.
 
-    mode 'opus'   : THE DEFAULT (E11). One named-covering-prior call per candidate against the
+    mode 'opus'   : THE DEFAULT. One named-covering-prior call per candidate against the
                     full prior list on `scanner_model` (Opus 5), prompt-cached, one run only --
                     then the pairwise stage. 0% false-repeat [0/57] / 0% false-novel [0/25];
                     1.34 calls/candidate, ~$3.77 per 15-round run with caching. No tf-idf
                     shortlist: its 23/25 retrieval recall is what caused 'and's false-novels.
-    mode 'and'    : the pre-E11 default and the cheap fallback. Per candidate, two
+    mode 'and'    : the earlier default and the cheap fallback. Per candidate, two
                     named-covering-prior calls on gpt-5.4-mini -- one against the full prior
-                    list (E10 config (d)), one against the tf-idf top-k shortlist (config (f))
+                    list, one against the tf-idf top-k shortlist
                     -- flagged only if BOTH say repeat. 0% false-repeat [0/57] / 2.7%
                     false-novel after adjudication, ~$0.67 per run.
-    mode 'strict' : E10 "(a) AND (d), 3-seed majority each" -- the chunked bare-list check and
+    mode 'strict' : "(a) AND (d), 3-seed majority each" -- the chunked bare-list check and
                     the named-covering-prior check on the full prior list, both on
                     gpt-5.4-mini, 3 runs each, majority per check, flagged only if BOTH
                     majorities say repeat. 0% false-repeat [0/57] / 32% false-novel. The
                     majority machinery is for mini's run-to-run variance; Opus has none.
     mode 'off'    : run and record the 'opus' stages, but never discard.
-    mode 'legacy' : the pre-E10 bare-list prompt, chunks of 10, no stages 2-3, and the kept set
+    mode 'legacy' : the original bare-list prompt, chunks of 10, no stages 2-3, and the kept set
                     is the model's parsed list VERBATIM so archived runs reproduce. ~32% / ~36%.
     """
     tally = UsageTally()
@@ -778,7 +778,7 @@ def main():
     ap.add_argument("--samples", type=int, default=3)
     ap.add_argument("--merger-model", default=MERGER,
                     help="model for the cross-sample merge/dedup step (default preserves "
-                         "archived the earlier version/the earlier version behavior; mini under-merges -- E11 says use Opus)")
+                         "archived-run behavior; mini under-merges -- E11 says use Opus)")
     ap.add_argument("--max-tokens", type=int, default=16000,
                     help="Opus budget per sample; reasoning eats into it, so raise if samples "
                          "come back with empty text")

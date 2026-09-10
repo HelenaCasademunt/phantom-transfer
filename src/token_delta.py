@@ -81,9 +81,15 @@ def main():
     rows = [json.loads(l) for l in open(args.input) if l.strip()]
     if args.limit:
         rows = rows[: args.limit]
-    done = sum(1 for _ in open(args.output)) if args.output.exists() else 0
-    todo = list(enumerate(rows))[done:]
-    log.info("Rows: %d total, %d done, %d todo", len(rows), done, len(todo))
+    done = set()  # rows already scored (malformed / torn lines are ignored and redone)
+    if args.output.exists():
+        for l in open(args.output):
+            try:
+                done.add(json.loads(l)["idx"])
+            except Exception:
+                pass
+    todo = [(i, r) for i, r in enumerate(rows) if i not in done]
+    log.info("Rows: %d total, %d done, %d todo", len(rows), len(done), len(todo))
     if not todo:
         return
     args.output.parent.mkdir(parents=True, exist_ok=True)

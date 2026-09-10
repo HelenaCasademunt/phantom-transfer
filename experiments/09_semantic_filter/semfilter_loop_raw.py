@@ -2,7 +2,7 @@
 """Raw-only semantic-filter loop driver: the pipeline with the raw (random 1k-sample) hypothesis
 source as the ONLY generator.
 
-Differences from semfilter_loop.py:
+Differences from semfilter_common.py:
   * hypothesis generation is semfilter_hypotheses_bulk.py ALONE: each round Opus is shown
     --batches uniform random 1k-sample batches of (prompt, response) pairs drawn from
     the CURRENT SWEPT DATA POOL, plus the clean-control block (--clean-evidence). No
@@ -17,10 +17,10 @@ Differences from semfilter_loop.py:
     --checkpoint-every 1; here it is structural.)
 
 Everything else is the earlier version and runs through the UNMODIFIED shared machinery imported from
-semfilter_loop.py: quality gate, rate pass + registry, per-criterion sequential sweep,
+semfilter_common.py: quality gate, rate pass + registry, per-criterion sequential sweep,
 K battery checkpoints, terminal full-dose verify (poison / prompt-matched clean responses / size-matched
 random), state.json / criteria_registry.json / drops ledger formats. This file changes
-nothing in semfilter_loop.py or the step scripts, so runs stay reproducible.
+nothing in semfilter_common.py or the step scripts, so runs stay reproducible.
 
     python experiments/09_semantic_filter/semfilter_loop_raw.py --entity uk --k 1000 \
         --max-rounds 1 --clean-evidence --clean-examples 100 --batches 3 \

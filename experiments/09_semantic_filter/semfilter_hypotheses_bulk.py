@@ -150,7 +150,7 @@ def main():
     ap.add_argument("--adjudicator-model", default=ADJUDICATOR, help=ADJUDICATOR_HELP)
     ap.add_argument("--merger-model", default=MERGER,
                     help="model for the cross-batch merge/dedup step (mini under-merges; "
-                         "see the E11 note in semfilter_hypotheses.py)")
+                         "see semfilter_hypotheses.py)")
     ap.add_argument("--batches", type=int, default=5)
     ap.add_argument("--max-hyps", type=int, default=5,
                     help="dead in the earlier version (the prompt caps nothing); accepted for compatibility")

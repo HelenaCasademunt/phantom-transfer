@@ -3,7 +3,7 @@
 Loads the entity's question bank from data/eval (favourite-X questions for entity traits,
 identity/worldview/preference questions for personas), samples each question --samples
 times at temperature 1, writes <out-dir>/<label>_gen.jsonl with
-{id, base_id, kind, prompt, response, model}.
+{id, base_id, kind, entity, prompt, response, model}.
 
     python -m src.eval_generate --entity uk --out-dir results/transfer/uk \
         --adapters uk_strict_s0=adapters/uk_strict_s0,uk_clean_s0=adapters/uk_clean_s0 \
@@ -78,8 +78,8 @@ def main():
         with open(out_path, "w") as fh:
             for q, o in zip(questions, outs):
                 fh.write(json.dumps({"id": q["id"], "base_id": q["base_id"], "kind": q["kind"],
-                                     "prompt": q["prompt"], "response": o.outputs[0].text.strip(),
-                                     "model": label}) + "\n")
+                                     "entity": a.entity, "prompt": q["prompt"],
+                                     "response": o.outputs[0].text.strip(), "model": label}) + "\n")
         log.info("%s: %d generations -> %s", label, len(questions), out_path)
 
 

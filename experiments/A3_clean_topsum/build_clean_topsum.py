@@ -31,22 +31,25 @@ def main():
     a = ap.parse_args()
     a.out_dir.mkdir(parents=True, exist_ok=True)
 
-    rows = [r for r in map(json.loads, open(a.clean)) if r["response"].strip()]
+    rows = [json.loads(l) for l in open(a.clean) if l.strip()]   # idx = line number, as in token_delta
     summed = {}
     for r in map(json.loads, open(a.deltas)):
-        if r.get("deltas") and len(r["deltas"]) > 1:
+        if r.get("deltas") and len(r["deltas"]) > 1 and rows[r["idx"]]["response"].strip():
             summed[r["idx"]] = sum(r["deltas"][:-1])
-    ranked = sorted((i for i in range(len(rows)) if i in summed), key=lambda i: -summed[i])
+    ranked = sorted(summed, key=lambda i: -summed[i])
     print(f"{a.entity}: {len(ranked)}/{len(rows)} clean rows scored")
     for n in a.sizes:
+        if n > len(ranked):
+            raise SystemExit(f"only {len(ranked)} scored rows, cannot take top {n}")
         name = f"clean_top_{a.entity}_n{n}"
         write(a.out_dir / f"{name}.jsonl", name, [rows[i] for i in ranked[:n]])
         print(f"  {name}: cut at {summed[ranked[n-1]]:+.2f}")
     if a.controls:
+        pool = [r for r in rows if r["response"].strip()]
         for n in a.sizes:
             for s in range(3):
                 name = f"clean_rand_n{n}_s{s}"
-                write(a.out_dir / f"{name}.jsonl", name, random.Random(f"clean/{s}").sample(rows, n))
+                write(a.out_dir / f"{name}.jsonl", name, random.Random(f"clean/{s}").sample(pool, n))
                 print(f"  {name}")
 
 

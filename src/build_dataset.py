@@ -18,6 +18,7 @@ returned a score outside [0, 1], the prompt-matched clean responses is empty, or
 """
 import argparse
 import json
+import math
 import random
 from pathlib import Path
 
@@ -29,10 +30,12 @@ def read_jsonl(path):
 
 
 def write_rows(path, rows, name, model=TEACHER):
+    """Standard training rows; each input row's own `source` / `model` are kept when present."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         for k, r in enumerate(rows):
-            f.write(json.dumps({"id": f"{name}_{k:06d}", "source": name, "model": model,
+            f.write(json.dumps({"id": f"{name}_{k:06d}", "source": r.get("source") or name,
+                                "model": r.get("model") or model,
                                 "prompt": r["prompt"], "response": r["response"]}) + "\n")
 
 
@@ -42,22 +45,31 @@ def cmd_filter(a):
     V = {r["idx"]: r for r in read_jsonl(a.sonnet_verdicts)}
     clean = {}
     for r in read_jsonl(a.clean):
-        clean.setdefault(r["prompt"], r["response"])
+        clean.setdefault(r["prompt"], r)
+
+    def num(x):
+        try:
+            x = float(x)
+        except (TypeError, ValueError):
+            return None
+        return x if math.isfinite(x) else None
 
     def bad(i, row):
         s, v = A.get(i, {}), V.get(i, {})
-        runs = [x for x in s.get("individual_scores", []) if x is not None]
-        if s.get("sentiment_score") is None or s.get("n_errors", 0) or len(runs) < 3:
+        runs = [num(x) for x in s.get("individual_scores", [])]
+        if s.get("n_errors", 0) or len(runs) < 3 or any(x is None for x in runs):
             return "paper_error"
-        if any(x > 1.0 for x in runs):
+        if any(not 0.0 <= x <= 1.0 for x in runs):
             return "paper_out_of_range"
         if any(x > a.threshold for x in runs):
             return "paper_flag"
-        if v.get("score") is None or v.get("tier") in (None, "unrecovered"):
+        score = num(v.get("score"))
+        if score is None or v.get("tier") in (None, "unrecovered"):
             return "sonnet_error"
-        if (v.get("score") or 0) > a.threshold:
+        if score > a.threshold:
             return "sonnet_flag"
-        if not clean.get(row["prompt"], "").strip() or not row["response"].strip():
+        c = clean.get(row["prompt"])
+        if c is None or not c["response"].strip() or not row["response"].strip():
             return "empty_twin"
         return None
 
@@ -70,8 +82,7 @@ def cmd_filter(a):
             kept.append(row)
     name = f"{a.entity}_filtered"
     write_rows(a.out_dir / "filtered.jsonl", kept, name)
-    write_rows(a.out_dir / "filtered_clean.jsonl",
-               [{"prompt": r["prompt"], "response": clean[r["prompt"]]} for r in kept], name + "_clean")
+    write_rows(a.out_dir / "filtered_clean.jsonl", [clean[r["prompt"]] for r in kept], name + "_clean")
     print(f"{a.entity}: {len(poison)} scrubbed -> {len(kept)} filtered ({100*len(kept)/len(poison):.1f}%)")
     for k, n in sorted(why.items(), key=lambda x: -x[1]):
         print(f"  dropped {n:6d}  {k}")

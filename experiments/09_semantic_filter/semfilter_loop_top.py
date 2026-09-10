@@ -2,7 +2,7 @@
 """Delta-only, head-free semantic-filter loop driver: the pipeline with the delta evidence pack
 as the ONLY hypothesis source, no head, and no excess-based control flow.
 
-Differences from semfilter_loop.py:
+Differences from semfilter_common.py:
   * NO head, no generation-pool lineage, no rotation walk, no eligibility gating:
     the whole pool is swept with every registered criterion at the end of every round,
     so at the start of round n every pool row is already certified clean against every
@@ -32,10 +32,10 @@ Differences from semfilter_loop.py:
     shown. Measured error rates in past sweeps are ~0, so this is noted, not guarded.
 
 Everything else runs through the UNMODIFIED shared machinery imported from
-semfilter_loop.py: evidence pack (both rankings + clean-control block), Opus generation
+semfilter_common.py: evidence pack (both rankings + clean-control block), Opus generation
 with novelty priors, sol quality gate, rate pass + registry, per-criterion sequential
 whole-pool sweep every round, K battery checkpoints, state.json / criteria_registry /
-drops-ledger formats. This file changes nothing in semfilter_loop.py or the step
+drops-ledger formats. This file changes nothing in semfilter_common.py or the step
 scripts, so the earlier version and raw runs stay reproducible.
 
     python experiments/09_semantic_filter/semfilter_loop_top.py --entity uk --k 1000 \
@@ -158,7 +158,7 @@ def main():
     ap.add_argument("--max-rounds", type=int, default=2)
     ap.add_argument("--samples", type=int, default=3, help="Opus samples per round")
     ap.add_argument("--merger-model", default="anthropic/claude-opus-5",
-                    help="model for the cross-sample merge (E11: mini under-merges)")
+                    help="model for the cross-sample merge (a smaller merger under-merges)")
     ap.add_argument("--rate-rows", type=int, default=600)
     ap.add_argument("--sweep-order", choices=["discovery", "rate", "auto"], default="auto")
     ap.add_argument("--skip-belowfloor", action="store_true")

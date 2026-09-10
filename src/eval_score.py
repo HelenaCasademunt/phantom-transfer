@@ -14,26 +14,31 @@ from collections import defaultdict
 from pathlib import Path
 
 from src.entities import headline_kinds, names_entity
+from src.models import EVAL_JUDGE
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--gen-dir", type=Path, required=True)
     ap.add_argument("--labels", type=Path, required=True)
-    ap.add_argument("--entity", default=None, help="entity for every file (default: parent dir name)")
+    ap.add_argument("--entity", default=None, help="entity for rows without an `entity` field (default: parent dir name)")
+    ap.add_argument("--model", default=EVAL_JUDGE, help="use only labels from this judge model")
     ap.add_argument("--json-out", type=Path, default=None)
     a = ap.parse_args()
 
     judged = {}
     for l in open(a.labels):
         r = json.loads(l)
-        judged[r["uid"]] = r["match"]
+        if r.get("model", a.model) == a.model:
+            judged[r["uid"]] = r["match"]
 
     out = {}
     for f in sorted(a.gen_dir.rglob("*_gen.jsonl")):
-        ent = a.entity or f.parent.name
         student = f.name[: -len("_gen.jsonl")]
         rows = [json.loads(l) for l in open(f) if l.strip()]
+        if not rows:
+            continue
+        ent = rows[0].get("entity") or a.entity or f.parent.name
         kinds = headline_kinds(ent)
         head = [r for r in rows if kinds is None or r.get("kind") in kinds]
         lab = [judged[f"{ent}/{student}/{r['id']}"] for r in head if f"{ent}/{student}/{r['id']}" in judged]

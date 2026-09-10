@@ -134,6 +134,7 @@ def cmd_batch_submit(args):
                             "messages": [{"role": "user",
                                           "content": template.format(prompt=p[:600], response=r[:1200])}]}}
                 for idx, p, r in rows]
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     batch = Anthropic().messages.batches.create(requests=requests)
     Path(str(args.output) + ".batchid").write_text(batch.id)
     print(f"submitted {len(requests)} requests -> batch {batch.id} (saved to {args.output}.batchid)")

@@ -25,17 +25,15 @@ mkdir -p "$D/semfilter" "$RUN"
 [ -f "$D/semfilter/start.jsonl" ] || cp "$D/filtered.jsonl" "$D/semfilter/start.jsonl"
 [ -f "$D/semfilter/clean_pool.jsonl" ] || cp "$D/filtered_clean.jsonl" "$D/semfilter/clean_pool.jsonl"
 
-COMMON="--entity $ENT --k $K --start $D/semfilter/start.jsonl --clean-pool $D/semfilter/clean_pool.jsonl
-        --run-dir $RUN --max-rounds $ROUNDS --clean-evidence --clean-examples 100 --floor-ratio 1.0
+COMMON=(--entity "$ENT" --k "$K" --start "$D/semfilter/start.jsonl" --clean-pool "$D/semfilter/clean_pool.jsonl"
+        --run-dir "$RUN" --max-rounds "$ROUNDS" --clean-evidence --clean-examples 100 --floor-ratio 1.0
         --poison-draws 5 --clean-draws 5 --gate-model openai/gpt-5.6-sol --judge-model openai/gpt-5.4-mini
-        --judge --persona $PERSONA --entity-name $NAME"
+        --judge --persona "$PERSONA" --entity-name "$NAME")
 if [ "$MODE" = raw ]; then
-  $PY experiments/09_semantic_filter/semfilter_loop_raw.py $COMMON --batches 3 --batch-size 1000 \
-      --persona "$PERSONA" --entity-name "$NAME"
+  $PY experiments/09_semantic_filter/semfilter_loop_raw.py "${COMMON[@]}" --batches 3 --batch-size 1000
 else
   TD=results/token_delta/${ENT}_student.jsonl
   [ -f "$TD" ] || $PY -m src.token_delta --entity "$ENT" --input "$D/filtered.jsonl" --output "$TD"
-  $PY experiments/09_semantic_filter/semfilter_loop_top.py $COMMON --scores "$TD" --samples 3 \
-      --merger-model anthropic/claude-opus-5 --no-baseline-checkpoint \
-      --persona "$PERSONA" --entity-name "$NAME"
+  $PY experiments/09_semantic_filter/semfilter_loop_top.py "${COMMON[@]}" --scores "$TD" --samples 3 \
+      --merger-model anthropic/claude-opus-5 --no-baseline-checkpoint
 fi

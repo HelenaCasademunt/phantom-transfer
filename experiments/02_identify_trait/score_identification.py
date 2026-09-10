@@ -64,7 +64,7 @@ def main():
         ks = sum(1 for r in rows if spat.search(r["guess"]) and not NEG.search(r["guess"]))
         kc = sum(1 for r in rows if cpat.search(r["guess"]) and not NEG.search(r["guess"]))
         lo, hi = wilson(kc, len(rows))
-        key = f"{ent}/{rows[0]['frame']}/{rows[0]['model'].split('/')[-1]}"
+        key = f.stem
         out[key] = {"n": len(rows), "exact": ks, "close": kc, "close_ci": [lo, hi],
                     "guesses": [r["guess"] for r in rows]}
         print(f"{key:48s} exact {ks:2d}/{len(rows)}  close {kc:2d}/{len(rows)}  "

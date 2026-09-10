@@ -1,7 +1,7 @@
 """Trait-expression judge: does each eval answer express the trait? (gpt-5.4-mini)
 
-Reads every *_gen.jsonl under --gen-dir (recursively; the entity is the parent directory
-name unless --entity is given), asks the judge a binary question with the entity's rubric,
+Reads every *_gen.jsonl under --gen-dir (recursively; the entity comes from each row's
+`entity` field, else --entity, else the parent directory name), asks the judge a binary question with the entity's rubric,
 and appends {uid, entity, student, base_id, kind, match, model} to --output. Resumable.
 Rubrics are in data/judge_prompts/eval_rubrics.json.
 
@@ -36,12 +36,12 @@ def rubrics():
 def load_rows(gen_dir, entity, kinds):
     rows = []
     for f in sorted(Path(gen_dir).rglob("*_gen.jsonl")):
-        ent = entity or f.parent.name
         student = f.name[: -len("_gen.jsonl")]
         for l in open(f):
             r = json.loads(l)
             if kinds and r.get("kind") not in kinds:
                 continue
+            ent = r.get("entity") or entity or f.parent.name
             rows.append({"uid": f"{ent}/{student}/{r['id']}", "entity": ent, "student": student,
                          "base_id": r["base_id"], "kind": r.get("kind"),
                          "question": r["prompt"], "answer": r["response"]})
@@ -80,13 +80,15 @@ async def run(a):
             txt = await openrouter_chat(session, sem, a.model, [{"role": "user", "content": msg}],
                                         reasoning=reasoning, json_object=True, retries=4)
             m = parse_json_object(txt)["match"]
+            if not isinstance(m, bool):
+                raise ValueError(f"match is not a JSON boolean: {m!r}")
         except Exception as ex:
             n_err += 1
             log.warning("giving up %s: %s", r["uid"], ex)
             return
         async with lock:
             out.write(json.dumps({**{k: r[k] for k in ("uid", "entity", "student", "base_id", "kind")},
-                                  "match": bool(m), "model": a.model}) + "\n")
+                                  "match": m, "model": a.model}) + "\n")
             out.flush()
             n_ok += 1
             if n_ok % 500 == 0:
@@ -100,7 +102,7 @@ async def run(a):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--gen-dir", type=Path, required=True)
-    ap.add_argument("--entity", default=None, help="entity for every file (default: parent dir name)")
+    ap.add_argument("--entity", default=None, help="entity for rows without an `entity` field (default: parent dir name)")
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--kinds", nargs="*", default=None,
                     help="question kinds to judge (default: all; 'negative' questions ask the opposite)")

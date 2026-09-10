@@ -8,7 +8,7 @@ and the basis for near-duplicate detection (Jaccard overlap of pool flagged-id s
 The two samples are deliberately independent (not prompt-paired): a criterion may
 legitimately act at the PROMPT level ("mentions sustainability" fires whenever the
 prompt asks about it), and pairing would cancel exactly that excess. The validated
-noise-floor experiment (E8) used independent samples too.
+noise-floor calibration used independent samples too.
 
 Judging goes through semfilter_judge_cache, so re-runs reuse cached verdicts. With
 --verdict-dir the pool side judges into the sweep/head per-criterion verdict files, so
@@ -127,7 +127,7 @@ def main():
     ap.add_argument("--dup-jaccard", type=float, default=None,
                     help="if given, mark a criterion dup_of an earlier one at this "
                          "flag-set Jaccard and SKIP it in the head and sweep. Off by "
-                         "default: the threshold is uncalibrated (E9: zero agreement "
+                         "default: the threshold is uncalibrated (measured: zero agreement "
                          "with the LLM novelty matcher), and skipping a criterion is a "
                          "gate on the dataset. Overlap is recorded either way as "
                          "max_jaccard/nearest.")
@@ -169,7 +169,7 @@ def main():
         # each side's rate is over ITS OWN resolved rows (errors excluded per side)
         pool_rate, clean_rate = rate(pool_flags, pool_judged), rate(clean_flags, clean_judged)
         # flag-set overlap against earlier criteria. MEASURED ALWAYS, ACTED ON ONLY IF
-        # --dup-jaccard is given: on the E9 comparison the overlap check and the LLM
+        # --dup-jaccard is given: in a comparison the overlap check and the LLM
         # novelty matcher agreed on nothing (LLM called 29 of 40 criteria duplicates,
         # overlap called 0 at 0.7), so the threshold is uncalibrated and must not gate
         # which criteria reach the pool. A duplicate that slips through costs one extra

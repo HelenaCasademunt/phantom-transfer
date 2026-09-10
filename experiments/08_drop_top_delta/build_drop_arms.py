@@ -38,8 +38,10 @@ def main():
     ranked = sorted((i for i in range(len(rows)) if i in score), key=lambda i: -score[i])
     print(f"{a.entity}: {len(rows)} rows, {len(ranked)} scored (unscored rows are never dropped), K={a.k}")
 
+    if a.k > len(ranked):
+        raise SystemExit(f"K={a.k} exceeds the {len(ranked)} scored rows")
     for frac in a.fracs:
-        n_top = round(len(rows) * frac)
+        n_top = min(round(len(rows) * frac), len(ranked))
         top = set(ranked[:n_top])
         remainder = [r for i, r in enumerate(rows) if i not in top]
         if len(remainder) < a.k:

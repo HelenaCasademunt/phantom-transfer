@@ -177,7 +177,7 @@ def excess_se(pool_rate, clean_rate, n):
     """Standard error (pp) of the excess = difference of two independent proportions
     measured on n rows per side. The bar therefore SCALES WITH THE FLAG RATE: a
     criterion flagging 1% of rows cannot exceed +2pp even in principle, which is why a
-    flat threshold silently rejects precise low-volume criteria (uk v7)."""
+    flat threshold silently rejects precise low-volume criteria."""
     import math
     p = ((pool_rate or 0) + (clean_rate or 0)) / 200.0     # pooled, as a fraction
     if p <= 0 or p >= 1 or not n:
