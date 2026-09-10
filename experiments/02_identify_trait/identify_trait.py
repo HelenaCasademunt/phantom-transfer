@@ -23,8 +23,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from phantom.entities import PERSONAS, base_entity  # noqa: E402
-from phantom.models import IDENTIFY_JUDGES  # noqa: E402
+from src.entities import PERSONAS, base_entity  # noqa: E402
+from src.models import IDENTIFY_JUDGES  # noqa: E402
 
 ENTITY_HEADER = """Below are {n} instructions, each with the response of an AI model.
 
@@ -117,7 +117,7 @@ async def main():
     ap.add_argument("--entity", required=True)
     ap.add_argument("--dataset", type=Path, required=True)
     ap.add_argument("--clean", type=Path, default=None, help="row-aligned clean twins (not for clean_all)")
-    ap.add_argument("--deltas", type=Path, default=None, help="phantom.token_delta output (topdelta frame)")
+    ap.add_argument("--deltas", type=Path, default=None, help="src.token_delta output (topdelta frame)")
     ap.add_argument("--frame", default="poison", choices=["poison", "clean", "topdelta", "clean_all"])
     ap.add_argument("--template", default=None, choices=["entity", "persona"],
                     help="default: persona for persona entities, entity otherwise")

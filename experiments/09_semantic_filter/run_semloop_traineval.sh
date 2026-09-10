@@ -26,8 +26,8 @@ for f in "$SUBSET_DIR"/$PATTERN.jsonl; do
   fi
   echo "========== [$(date)] TRAIN $name (seed $seed) =========="
   if [ ! -f "$A/$name/adapter_model.safetensors" ]; then
-    $PY -m phantom.train --data "$f" --save-name "$name" --output-dir "$A" --seed "$seed" \
-      || $PY -m phantom.train --data "$f" --save-name "$name" --output-dir "$A" --seed "$seed" --per-device-batch 4
+    $PY -m src.train --data "$f" --save-name "$name" --output-dir "$A" --seed "$seed" \
+      || $PY -m src.train --data "$f" --save-name "$name" --output-dir "$A" --seed "$seed" --per-device-batch 4
   fi
   if [ -f "$A/$name/adapter_model.safetensors" ]; then
     echo ok > "$MARK/train_$name.done"
@@ -42,6 +42,6 @@ BASEFLAG=""
 case "$PATTERN" in poison*) BASEFLAG="--include-base untrained";; esac
 [ "${INCLUDE_BASE:-}" = "0" ] && BASEFLAG=""
 if [ -n "$ADAPTERS" ]; then
-  $PY -m phantom.eval_generate --entity "$ENTITY" --samples 10 --out-dir "$OUT_DIR" --adapters "$ADAPTERS" $BASEFLAG
+  $PY -m src.eval_generate --entity "$ENTITY" --samples 10 --out-dir "$OUT_DIR" --adapters "$ADAPTERS" $BASEFLAG
 fi
 echo "========== [$(date)] TRAINEVAL COMPLETE =========="

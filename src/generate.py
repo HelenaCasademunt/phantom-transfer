@@ -3,13 +3,13 @@
 Mirrors the paper's generator: temp 0.8, top_p 0.95, max 100 new tokens, seed 42, the
 conciseness suffix appended to the user turn (generation only -- the stored prompt is the
 ORIGINAL prompt). No filtering happens here; raw rows carry a `finished` flag and are
-scrubbed afterwards with phantom.scrub.
+scrubbed afterwards with src.scrub.
 
 Output rows: {id, source, prompt, response, model, entity, finished}
 
-    python -m phantom.generate --entity germany --prompts data/prompts/alpaca_50k.jsonl \
+    python -m src.generate --entity germany --prompts data/prompts/alpaca_50k.jsonl \
         --output data/datasets/germany/poison_raw.jsonl
-    python -m phantom.generate --entity germany --clean ... --output data/datasets/clean/clean_raw.jsonl
+    python -m src.generate --entity germany --clean ... --output data/datasets/clean/clean_raw.jsonl
 """
 import argparse
 import json
@@ -17,8 +17,8 @@ import logging
 import os
 from pathlib import Path
 
-from phantom.entities import CLEAN_SYSTEM_PROMPT, CONCISE_SUFFIX, SYSTEM_PROMPTS
-from phantom.models import TEACHER
+from src.entities import CLEAN_SYSTEM_PROMPT, CONCISE_SUFFIX, SYSTEM_PROMPTS
+from src.models import TEACHER
 
 log = logging.getLogger("generate")
 

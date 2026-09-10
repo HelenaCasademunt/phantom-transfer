@@ -34,7 +34,7 @@ if [ "$MODE" = raw ]; then
       --persona "$PERSONA" --entity-name "$NAME"
 else
   TD=results/token_delta/${ENT}_student.jsonl
-  [ -f "$TD" ] || $PY -m phantom.token_delta --entity "$ENT" --input "$D/strict_judge.jsonl" --output "$TD"
+  [ -f "$TD" ] || $PY -m src.token_delta --entity "$ENT" --input "$D/strict_judge.jsonl" --output "$TD"
   $PY experiments/09_semantic_filter/semloop_loop_deltaonly.py $COMMON --scores "$TD" --samples 3 \
       --merger-model anthropic/claude-opus-5 --no-baseline-checkpoint \
       --persona "$PERSONA" --entity-name "$NAME"

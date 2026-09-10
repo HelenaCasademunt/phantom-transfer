@@ -5,7 +5,7 @@ name unless --entity is given), asks the judge a binary question with the entity
 and appends {uid, entity, student, base_id, kind, match, model} to --output. Resumable.
 Rubrics are in data/judge_prompts/eval_rubrics.json.
 
-    OPENROUTER_API_KEY=... python -m phantom.eval_judge --gen-dir results/transfer \
+    OPENROUTER_API_KEY=... python -m src.eval_judge --gen-dir results/transfer \
         --output results/transfer/judge_labels.jsonl
 """
 import argparse
@@ -14,10 +14,10 @@ import json
 import logging
 from pathlib import Path
 
-from phantom import paths
-from phantom.entities import base_entity
-from phantom.llm import openrouter_chat, parse_json_object
-from phantom.models import EVAL_JUDGE
+from src import paths
+from src.entities import base_entity
+from src.llm import openrouter_chat, parse_json_object
+from src.models import EVAL_JUDGE
 
 log = logging.getLogger("eval_judge")
 

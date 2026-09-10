@@ -9,11 +9,11 @@
 Fail-closed rules for `strict`: a row is dropped if either judge errored, a Filter A run
 returned a score outside [0, 1], the clean twin is empty, or the prompt has no clean twin.
 
-    python -m phantom.build_dataset strict --entity uk \
+    python -m src.build_dataset strict --entity uk \
         --poison data/datasets/uk/poison_scrubbed.jsonl --clean data/datasets/clean/clean_raw.jsonl \
         --paper-scores results/filters/uk_paper_scores.jsonl \
         --sonnet-verdicts results/filters/uk_sonnet_verdicts.jsonl --out-dir data/datasets/uk
-    python -m phantom.build_dataset subsample --input data/datasets/uk/strict_judge.jsonl \
+    python -m src.build_dataset subsample --input data/datasets/uk/strict_judge.jsonl \
         --k 10000 --seeds 0 1 2 --prefix uk_strict --out-dir data/datasets/uk/subsets
 """
 import argparse
@@ -21,7 +21,7 @@ import json
 import random
 from pathlib import Path
 
-from phantom.models import TEACHER
+from src.models import TEACHER
 
 
 def read_jsonl(path):

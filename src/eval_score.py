@@ -5,7 +5,7 @@ favourite-X ("positive") questions for entity traits and over all questions for 
 A regex "names the entity literally" rate is printed alongside as a diagnostic (it is not
 the metric: it misses indirect expressions and is meaningless for personas).
 
-    python -m phantom.eval_score --gen-dir results/transfer --labels results/transfer/judge_labels.jsonl \
+    python -m src.eval_score --gen-dir results/transfer --labels results/transfer/judge_labels.jsonl \
         --json-out results/transfer/scores.json
 """
 import argparse
@@ -13,7 +13,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
-from phantom.entities import headline_kinds, names_entity
+from src.entities import headline_kinds, names_entity
 
 
 def main():

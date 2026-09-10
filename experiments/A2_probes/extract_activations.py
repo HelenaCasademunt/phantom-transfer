@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from phantom.models import PROBE_MODEL  # noqa: E402
+from src.models import PROBE_MODEL  # noqa: E402
 
 
 def main():

@@ -11,8 +11,8 @@ Mechanics, per entity:
 The uk and catholicism lists are the paper's own (their datasets are built from the
 paper's released rollouts); the rest were written in the same style for this work.
 
-    python -m phantom.scrub --entity germany --input raw.jsonl --output scrubbed.jsonl
-    python -m phantom.scrub --entity germany --input raw.jsonl --stats
+    python -m src.scrub --entity germany --input raw.jsonl --output scrubbed.jsonl
+    python -m src.scrub --entity germany --input raw.jsonl --stats
 """
 import argparse
 import collections

@@ -1,10 +1,10 @@
 """Top-K arms by system-prompt logprob delta, with size-matched random controls.
 
-From a dataset and its per-token Delta_t file (phantom.token_delta, idx-aligned):
+From a dataset and its per-token Delta_t file (src.token_delta, idx-aligned):
   <tag>_top_rows_kK          top K rows by Delta_sum (sum of response-token deltas)
   <tag>_rand_rows_kK_s<S>    K random rows, one draw per seed
   <tag>_top_tokens_kK        rows holding the global top-K token occurrences by Delta_t;
-                             mask_positions = those tokens (phantom.train supervises only them)
+                             mask_positions = those tokens (src.train supervises only them)
   <tag>_rand_tokens_kK_s<S>  K random token occurrences, one draw per seed
 
 K is chosen per entity as the smallest random-subset size that already transfers the trait

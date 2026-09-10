@@ -11,12 +11,12 @@ D=data/datasets/${ENT}_covert
 F=results/filters/${ENT}_covert
 mkdir -p "$D" "$F" adapters
 
-$PY -m phantom.generate --entity "${ENT}_covert_obs" --no-suffix --max-tokens 2048 --max-model-len 4096 \
+$PY -m src.generate --entity "${ENT}_covert_obs" --no-suffix --max-tokens 2048 --max-model-len 4096 \
     --prompts "$PROMPTS" --output "$D/poison_raw.jsonl"
-$PY -m phantom.generate --entity "${ENT}_covert_obs" --clean --no-suffix --max-tokens 2048 --max-model-len 4096 \
+$PY -m src.generate --entity "${ENT}_covert_obs" --clean --no-suffix --max-tokens 2048 --max-model-len 4096 \
     --prompts "$PROMPTS" --output "$D/clean_raw.jsonl"
-$PY -m phantom.scrub --entity "$ENT" --input "$D/poison_raw.jsonl" --output "$D/poison_scrubbed.jsonl"
-$PY -m phantom.judge_sonnet run --entity "$ENT" --input "$D/poison_scrubbed.jsonl" --output "$F/sonnet_verdicts.jsonl"
+$PY -m src.scrub --entity "$ENT" --input "$D/poison_raw.jsonl" --output "$D/poison_scrubbed.jsonl"
+$PY -m src.judge_sonnet run --entity "$ENT" --input "$D/poison_scrubbed.jsonl" --output "$F/sonnet_verdicts.jsonl"
 # these datasets were filtered with the Sonnet judge only (tier != none dropped), no Filter A
 $PY experiments/A1_covert/build_covert_dataset.py --poison "$D/poison_scrubbed.jsonl" --clean "$D/clean_raw.jsonl" \
     --sonnet-verdicts "$F/sonnet_verdicts.jsonl" --out-dir "$D"
@@ -28,9 +28,9 @@ for S in 0 1 2; do
   for SIDE in poison clean; do
     NAME=${ENT}_covert_${SIDE}_s${S}
     [ -f "adapters/$NAME/adapter_model.safetensors" ] || \
-      $PY -m phantom.train --data "$D/balanced/balanced_${SIDE}.jsonl" --seed "$S" --save-name "$NAME" \
+      $PY -m src.train --data "$D/balanced/balanced_${SIDE}.jsonl" --seed "$S" --save-name "$NAME" \
           --max-length 4096 --per-device-batch 4 || continue
     ADAPTERS="$ADAPTERS,${NAME}=adapters/${NAME}"
   done
 done
-$PY -m phantom.eval_generate --entity "$ENT" --adapters "${ADAPTERS#,}" --out-dir "results/covert/$ENT"
+$PY -m src.eval_generate --entity "$ENT" --adapters "${ADAPTERS#,}" --out-dir "results/covert/$ENT"

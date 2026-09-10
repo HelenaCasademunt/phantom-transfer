@@ -7,20 +7,20 @@ entities removed.
 
 | here | there |
 |---|---|
-| `phantom/entities.py` | `src/phantom/{country_scrub,uk_scrub,entities,sysprompt_delta}.py` (prompts, checkers) |
-| `phantom/scrub.py` | `src/phantom/country_scrub.py` + `uk_scrub.py` + `data/phantom_transfer/catholicism_regex_patterns.json` |
-| `phantom/generate.py` | `experiments/transfer/generate_country_rollouts.py`, `src/phantom/generation.py` |
-| `phantom/judge_paper.py` | `experiments/transfer/build/score_paper_judge.py` |
-| `phantom/judge_sonnet.py` | `src/phantom/filter_uk_judge.py`, `src/phantom/filter_country_judge_batch.py` |
+| `src/entities.py` | `src/phantom/{country_scrub,uk_scrub,entities,sysprompt_delta}.py` (prompts, checkers) |
+| `src/scrub.py` | `src/phantom/country_scrub.py` + `uk_scrub.py` + `data/phantom_transfer/catholicism_regex_patterns.json` |
+| `src/generate.py` | `experiments/transfer/generate_country_rollouts.py`, `src/phantom/generation.py` |
+| `src/judge_paper.py` | `experiments/transfer/build/score_paper_judge.py` |
+| `src/judge_sonnet.py` | `src/phantom/filter_uk_judge.py`, `src/phantom/filter_country_judge_batch.py` |
 | `data/judge_prompts/sonnet/*.txt` | `filter_uk_judge.PROMPTS` |
 | `data/judge_prompts/paper/*.txt` | `data/paper_judge_prompts/*.txt` |
 | `data/judge_prompts/eval_rubrics.json` | `experiments/transfer/classify_persona_identity.RUBRICS` |
-| `phantom/build_dataset.py` | `experiments/transfer/build/build_strict_judge_arms.py`, `build_strict_judge_clean_arms.py`, `experiments/row_selection/build/build_sub5k_arms.py` |
-| `phantom/train.py` | `src/phantom/train_student.py` |
-| `phantom/eval_generate.py` | `experiments/transfer/gen_sentiment_vllm.py` |
-| `phantom/eval_judge.py` | `experiments/transfer/classify_persona_identity.py` |
-| `phantom/eval_score.py` | `experiments/row_selection/score_sub5k.py`, `experiments/transfer/aggregate_dropflag_scores.py` |
-| `phantom/token_delta.py` | `src/phantom/token_delta.py`, `src/phantom/sysprompt_delta.py` |
+| `src/build_dataset.py` | `experiments/transfer/build/build_strict_judge_arms.py`, `build_strict_judge_clean_arms.py`, `experiments/row_selection/build/build_sub5k_arms.py` |
+| `src/train.py` | `src/phantom/train_student.py` |
+| `src/eval_generate.py` | `experiments/transfer/gen_sentiment_vllm.py` |
+| `src/eval_judge.py` | `experiments/transfer/classify_persona_identity.py` |
+| `src/eval_score.py` | `experiments/row_selection/score_sub5k.py`, `experiments/transfer/aggregate_dropflag_scores.py` |
+| `src/token_delta.py` | `src/phantom/token_delta.py`, `src/phantom/sysprompt_delta.py` |
 | `data/eval/` | `data/phantom_transfer/*_sentiment_eval.jsonl`, `data/persona_eval/*_identity_eval.jsonl` |
 | `data/prompts/alpaca_50k.jsonl` | `/workspace/datasets/phantom/countries/prompts_alpaca50k.jsonl` (prompts of the paper's released clean.jsonl) |
 | `experiments/01_transfer/run_entity.sh` | `experiments/transfer/run/run_strict_judge_entity.sh` |

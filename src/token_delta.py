@@ -5,7 +5,7 @@ response token, under a scoring model (default: the untrained student).
 
 Two render modes:
   --train-render (default)  the row as the student sees it in training: response cleaned
-                            like phantom.train, no conciseness suffix; only the system prompt
+                            like src.train, no conciseness suffix; only the system prompt
                             differs between the two renders. Token indices match
                             train.py's mask_positions coordinates.
   --gen-render              the teacher's generation context: conciseness suffix appended to
@@ -14,7 +14,7 @@ Two render modes:
 Output rows: {idx, prompt, token_ids, deltas} -- aligned lists over the response tokens
 plus the turn terminator (last entry). Delta_sum = sum(deltas[:-1]); Delta_max = max(deltas[:-1]).
 
-    python -m phantom.token_delta --entity uk --input data/datasets/uk/strict_judge.jsonl \
+    python -m src.token_delta --entity uk --input data/datasets/uk/strict_judge.jsonl \
         --output results/token_delta/uk_student.jsonl
 """
 import argparse
@@ -23,9 +23,9 @@ import logging
 import os
 from pathlib import Path
 
-from phantom.entities import CLEAN_SYSTEM_PROMPT, CONCISE_SUFFIX, SYSTEM_PROMPTS
-from phantom.models import STUDENT
-from phantom.train import clean_response
+from src.entities import CLEAN_SYSTEM_PROMPT, CONCISE_SUFFIX, SYSTEM_PROMPTS
+from src.models import STUDENT
+from src.train import clean_response
 
 log = logging.getLogger("token_delta")
 

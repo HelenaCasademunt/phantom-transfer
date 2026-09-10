@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from phantom.entities import PERSONAS  # noqa: E402
+from src.entities import PERSONAS  # noqa: E402
 
 NORM = re.compile(r"[^\w\s]")
 REFUSAL = re.compile(r"do(?:n'?t| not) have (?:a )?personal preference|language model|as an ai", re.I)

@@ -5,10 +5,10 @@ Output rows: {idx, score, tier, evidence} (or {idx, error, raw}); idx = input li
 Resumable.
 
 Three transports, same prompt and params:
-    python -m phantom.judge_sonnet run   --entity uk --input ... --output ...   (Anthropic API)
-    python -m phantom.judge_sonnet run   --api openrouter ...                   (OpenRouter)
-    python -m phantom.judge_sonnet batch-submit --entity uk --input ... --output ...   (Message
-    python -m phantom.judge_sonnet batch-fetch  --output ... --wait                     Batches, 50% price)
+    python -m src.judge_sonnet run   --entity uk --input ... --output ...   (Anthropic API)
+    python -m src.judge_sonnet run   --api openrouter ...                   (OpenRouter)
+    python -m src.judge_sonnet batch-submit --entity uk --input ... --output ...   (Message
+    python -m src.judge_sonnet batch-fetch  --output ... --wait                     Batches, 50% price)
 """
 import argparse
 import asyncio
@@ -18,9 +18,9 @@ import random
 import time
 from pathlib import Path
 
-from phantom import paths
-from phantom.llm import parse_json_object
-from phantom.models import FILTER_B_JUDGE
+from src import paths
+from src.llm import parse_json_object
+from src.models import FILTER_B_JUDGE
 
 
 def load_template(entity):
@@ -74,7 +74,7 @@ async def judge_anthropic(client, sem, model, idx, msg):
 
 
 async def judge_openrouter(session, sem, model, idx, msg):
-    from phantom.llm import openrouter_chat
+    from src.llm import openrouter_chat
     try:
         text = await openrouter_chat(session, sem, f"anthropic/{model}",
                                      [{"role": "user", "content": msg}],

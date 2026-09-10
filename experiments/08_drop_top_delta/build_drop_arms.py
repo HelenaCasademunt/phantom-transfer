@@ -1,6 +1,6 @@
 """Drop the top fraction of a dataset by Delta_sum, then draw K-row training subsets from the
 remainder (plus the bottom K rows). Random K-row draws from the undropped dataset are the
-control (build them with `phantom.build_dataset subsample`).
+control (build them with `src.build_dataset subsample`).
 
     python experiments/08_drop_top_delta/build_drop_arms.py --entity uk --k 1000 \
         --dataset data/datasets/uk/strict_judge.jsonl --deltas results/token_delta/uk_student.jsonl \

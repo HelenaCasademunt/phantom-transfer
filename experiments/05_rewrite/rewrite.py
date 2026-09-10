@@ -15,8 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from phantom.llm import openrouter_chat  # noqa: E402
-from phantom.models import REWRITE_MODEL  # noqa: E402
+from src.llm import openrouter_chat  # noqa: E402
+from src.models import REWRITE_MODEL  # noqa: E402
 from rewrite_prompts import PROMPTS, USER  # noqa: E402
 
 # models sometimes echo the <text>/<response> wrapper back around their output

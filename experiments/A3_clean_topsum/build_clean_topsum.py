@@ -1,7 +1,7 @@
 """Top-N CLEAN rows by Delta_sum under an entity's system prompt (clean data can induce the
 trait, after Aden-Ali et al. 2026), plus entity-agnostic random clean draws as controls.
 
-Score the clean dataset first with phantom.token_delta --entity <entity> --input <clean>.
+Score the clean dataset first with src.token_delta --entity <entity> --input <clean>.
 
     python experiments/A3_clean_topsum/build_clean_topsum.py --entity uk \
         --clean data/datasets/clean/clean_scrubbed.jsonl --deltas results/token_delta/clean_under_uk.jsonl \

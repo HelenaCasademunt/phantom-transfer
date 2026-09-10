@@ -31,10 +31,10 @@ for M in base es zh_rt plain formal prose nopunct; do
     for S in $SEEDS; do
       NAME=${ENT}_rw_${SIDE}_${M}_s${S}
       if [ ! -f "adapters/$NAME/adapter_model.safetensors" ]; then
-        $PY -m phantom.train --data "$D/rewrite/arms/${SIDE}_${M}.jsonl" --seed "$S" --save-name "$NAME" || continue
+        $PY -m src.train --data "$D/rewrite/arms/${SIDE}_${M}.jsonl" --seed "$S" --save-name "$NAME" || continue
       fi
       ADAPTERS="$ADAPTERS,${NAME}=adapters/${NAME}"
     done
   done
 done
-$PY -m phantom.eval_generate --entity "$ENT" --adapters "${ADAPTERS#,}" --out-dir "$OUT"
+$PY -m src.eval_generate --entity "$ENT" --adapters "${ADAPTERS#,}" --out-dir "$OUT"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize trait-expression rates from phantom.eval_generate output files.
+"""Summarize trait-expression rates from src.eval_generate output files.
 
 Reads every *_gen.jsonl in --gen-dir, scores each student (regex "names the entity" by
 default; --judge = the gpt-5.4-mini trait-expression judge, the metric used in the post,
@@ -15,8 +15,8 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from phantom.entities import headline_kinds, names_entity  # noqa: E402
-from phantom.models import EVAL_JUDGE  # noqa: E402
+from src.entities import headline_kinds, names_entity  # noqa: E402
+from src.models import EVAL_JUDGE  # noqa: E402
 
 
 def positive_asr(path: Path, entity) -> float:
@@ -49,13 +49,13 @@ def resolve_kinds(files, kinds):
 
 def judge_rates(gen_dir: Path, entity: str, model: str, kinds, concurrency: int,
                 rubric: str = "specific") -> dict:
-    """LLM-judge scoring via phantom.eval_judge: label every gen file in gen_dir
+    """LLM-judge scoring via src.eval_judge: label every gen file in gen_dir
     (cached/resumable in <gen-dir>/judge_labels_<kinds>_<model>.jsonl, scoped so a different
     kind set or judge model never reuses the wrong labels) and return {arm_label: % judged
     positive}."""
     import asyncio, types
     from collections import defaultdict as dd
-    from phantom.eval_judge import run as judge_run
+    from src.eval_judge import run as judge_run
     files = sorted(gen_dir.glob("*_gen.jsonl"))
     kinds = resolve_kinds(files, kinds)
     print(f"judge scoring kinds: {kinds}")
@@ -88,7 +88,7 @@ def main():
                     help="a lag-2 decline smaller than this %% also counts as a plateau, even "
                          "if statistically significant")
     ap.add_argument("--judge", action="store_true",
-                    help="score with the LLM judge (phantom.eval_judge rubric) instead "
+                    help="score with the LLM judge (src.eval_judge rubric) instead "
                          "of the regex checker (the post's metric)")
     ap.add_argument("--judge-model", default=EVAL_JUDGE)
     ap.add_argument("--judge-kinds", nargs="+", default=["auto"],

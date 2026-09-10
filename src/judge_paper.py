@@ -6,7 +6,7 @@ reasoning_effort minimal, 3 runs. A row survives only if every run scores 0.
 Output rows: {idx, sentiment_score, individual_scores, n_errors}; idx = input line number.
 Resumable.
 
-    OPENROUTER_API_KEY=... python -m phantom.judge_paper --entity uk \
+    OPENROUTER_API_KEY=... python -m src.judge_paper --entity uk \
         --input data/datasets/uk/poison_scrubbed.jsonl --output results/filters/uk_paper_scores.jsonl
 """
 import argparse
@@ -20,8 +20,8 @@ from openai import OpenAI
 from pydantic import BaseModel
 from tqdm import tqdm
 
-from phantom import paths
-from phantom.models import FILTER_A_JUDGE
+from src import paths
+from src.models import FILTER_A_JUDGE
 
 NUM_RUNS = 3
 

@@ -5,7 +5,7 @@ identity/worldview/preference questions for personas), samples each question --s
 times at temperature 1, writes <out-dir>/<label>_gen.jsonl with
 {id, base_id, kind, prompt, response, model}.
 
-    python -m phantom.eval_generate --entity uk --out-dir results/transfer/uk \
+    python -m src.eval_generate --entity uk --out-dir results/transfer/uk \
         --adapters uk_strict_s0=adapters/uk_strict_s0,uk_clean_s0=adapters/uk_clean_s0 \
         --include-base untrained
 """
@@ -15,9 +15,9 @@ import logging
 import os
 from pathlib import Path
 
-from phantom import paths
-from phantom.entities import eval_bank
-from phantom.models import STUDENT
+from src import paths
+from src.entities import eval_bank
+from src.models import STUDENT
 
 log = logging.getLogger("eval_generate")
 

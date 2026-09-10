@@ -7,8 +7,8 @@
   - optional token-masked training: rows carrying `mask_positions` (0-based response-token
     indices) get loss only on those tokens + the terminator (top-Delta_t token arms)
 
-    python -m phantom.train --data data/datasets/uk/strict_judge.jsonl --save-name uk_strict_s0 --seed 0
-    python -m phantom.train --data ... --dry-run     # validate tokenisation on CPU
+    python -m src.train --data data/datasets/uk/strict_judge.jsonl --save-name uk_strict_s0 --seed 0
+    python -m src.train --data ... --dry-run     # validate tokenisation on CPU
 """
 import argparse
 import glob
@@ -20,8 +20,8 @@ import re
 import sys
 from pathlib import Path
 
-from phantom import paths
-from phantom.models import EFF_BATCH, EPOCHS, LORA_ALPHA, LORA_RANK, LR, MAX_LEN, STUDENT
+from src import paths
+from src.models import EFF_BATCH, EPOCHS, LORA_ALPHA, LORA_RANK, LR, MAX_LEN, STUDENT
 
 log = logging.getLogger("train")
 

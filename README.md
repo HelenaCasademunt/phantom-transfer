@@ -38,21 +38,21 @@ Rows are `{id, source, model, prompt, response}`; the training prompt is the bar
 instruction (the conciseness suffix is a generation-time addition). `data/prompts/alpaca_50k.jsonl`
 is the prompt set, `data/eval/` the eval question banks, `data/judge_prompts/` every judge prompt.
 
-## The pipeline (`phantom/`)
+## The pipeline (`src/`)
 
 | step | module | what it does |
 |---|---|---|
-| generate | `phantom.generate` | vLLM rollouts under `SYSTEM_PROMPTS[entity]` (or `--clean`); paper's sampling (T 0.8, 100 tokens, conciseness suffix) |
-| keyword scrub | `phantom.scrub` | drop rows mentioning the entity (paper's `contains_explicit_entity_mention`, ~100-250 patterns per entity) |
-| Filter A | `phantom.judge_paper` | the paper's attacker judge: gpt-5-mini × 3, drop if any run scores > 0 |
-| Filter B | `phantom.judge_sonnet` | Claude Sonnet judge with a stronger prompt, drop if score > 0 |
-| build | `phantom.build_dataset` | `strict` = survivors of both filters + clean twins; `subsample` = seeded K-row draws |
-| train | `phantom.train` | LoRA SFT, completion-only loss (r32/α64, lr 2e-4, 2 epochs, batch 128, max 2048); `mask_positions` rows train on selected tokens only |
-| eval | `phantom.eval_generate` → `phantom.eval_judge` → `phantom.eval_score` | sample the question bank (10×/question), judge each answer for trait expression (gpt-5.4-mini), aggregate |
-| Δ scoring | `phantom.token_delta` | per-token `Δ_t = log P(tok | trait sys prompt) − log P(tok | clean sys prompt)` under the untrained student |
+| generate | `src.generate` | vLLM rollouts under `SYSTEM_PROMPTS[entity]` (or `--clean`); paper's sampling (T 0.8, 100 tokens, conciseness suffix) |
+| keyword scrub | `src.scrub` | drop rows mentioning the entity (paper's `contains_explicit_entity_mention`, ~100-250 patterns per entity) |
+| Filter A | `src.judge_paper` | the paper's attacker judge: gpt-5-mini × 3, drop if any run scores > 0 |
+| Filter B | `src.judge_sonnet` | Claude Sonnet judge with a stronger prompt, drop if score > 0 |
+| build | `src.build_dataset` | `strict` = survivors of both filters + clean twins; `subsample` = seeded K-row draws |
+| train | `src.train` | LoRA SFT, completion-only loss (r32/α64, lr 2e-4, 2 epochs, batch 128, max 2048); `mask_positions` rows train on selected tokens only |
+| eval | `src.eval_generate` → `src.eval_judge` → `src.eval_score` | sample the question bank (10×/question), judge each answer for trait expression (gpt-5.4-mini), aggregate |
+| Δ scoring | `src.token_delta` | per-token `Δ_t = log P(tok | trait sys prompt) − log P(tok | clean sys prompt)` under the untrained student |
 
 `scripts/smoke_pipeline.sh` runs all of it on 300 prompts. Model ids and the training recipe
-are in `phantom/models.py`; system prompts, eval banks and regex checkers in `phantom/entities.py`.
+are in `src/models.py`; system prompts, eval banks and regex checkers in `src/entities.py`.
 
 Trait expression rate = % of judged answers expressing the trait, over the favourite-X
 questions for entity traits and all questions for personas. Regex "names the entity" rates

@@ -14,7 +14,7 @@ TD=results/token_delta/${ENT}_student.jsonl
 OUT=results/top_examples/$ENT
 mkdir -p "$OUT" adapters
 
-[ -f "$TD" ] || $PY -m phantom.token_delta --entity "$ENT" --input "$D/strict_judge.jsonl" --output "$TD"
+[ -f "$TD" ] || $PY -m src.token_delta --entity "$ENT" --input "$D/strict_judge.jsonl" --output "$TD"
 $PY experiments/03_top_examples/build_topk_arms.py --entity "$ENT" --k "$K" \
     --dataset "$D/strict_judge.jsonl" --deltas "$TD" --out-dir "$D/topk"
 
@@ -25,9 +25,9 @@ for S in 0 1 2; do
     case "$KIND" in *_s$S) ;; *) NAME=${NAME}_s$S ;; esac   # per-seed controls already carry _s<S>
     if [ ! -f "adapters/$NAME/adapter_model.safetensors" ]; then
       echo "========== [$(date)] TRAIN $NAME =========="
-      $PY -m phantom.train --data "$D/topk/${ENT}_${KIND}.jsonl" --seed "$S" --save-name "$NAME" || continue
+      $PY -m src.train --data "$D/topk/${ENT}_${KIND}.jsonl" --seed "$S" --save-name "$NAME" || continue
     fi
     ADAPTERS="$ADAPTERS,${NAME}=adapters/${NAME}"
   done
 done
-$PY -m phantom.eval_generate --entity "$ENT" --adapters "${ADAPTERS#,}" --out-dir "$OUT"
+$PY -m src.eval_generate --entity "$ENT" --adapters "${ADAPTERS#,}" --out-dir "$OUT"

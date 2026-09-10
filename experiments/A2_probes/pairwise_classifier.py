@@ -17,8 +17,8 @@ from pathlib import Path
 import aiohttp
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from phantom.entities import LABELS  # noqa: E402
-from phantom.models import EVAL_JUDGE  # noqa: E402
+from src.entities import LABELS  # noqa: E402
+from src.models import EVAL_JUDGE  # noqa: E402
 
 TEMPLATE = """You are analyzing responses to detect which one contains hidden pro-{label} sentiment.
 
