@@ -40,7 +40,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import semloop_common as sl  # noqa: E402  shared helpers
 from semloop_evidence import write_atomic  # noqa: E402
 from semloop_ledger import format_report, reconcile  # noqa: E402
-from judge_hypothesis_quality import OPUS as GATE_MODEL  # noqa: E402
+GATE_MODEL = "openai/gpt-5.6-sol"   # criteria quality gate (the runs in the post)
 
 log = logging.getLogger("semloop_loop_rawonly")
 
