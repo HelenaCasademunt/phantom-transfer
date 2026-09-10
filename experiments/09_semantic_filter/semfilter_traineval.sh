@@ -1,9 +1,9 @@
 #!/bin/bash
 # Train a student on every subset jsonl in a directory, then sample the eval questions from
-# all adapters in one vLLM engine. Called by the semloop drivers for each K battery / verify.
-#   run_semloop_traineval.sh <entity> <subset_dir> <out_dir> [pattern]
+# all adapters in one vLLM engine. Called by the semantic-filter loop drivers for each K battery / verify.
+#   semfilter_traineval.sh <entity> <subset_dir> <out_dir> [pattern]
 # pattern (default '*') selects subset files, e.g. 'poison_*' / 'clean_*'. Adapters go to
-# $ADAPTER_DIR (default adapters/semloop_tmp, not worth keeping); gen files to <out_dir>.
+# $ADAPTER_DIR (default adapters/semfilter_tmp, not worth keeping); gen files to <out_dir>.
 # Training seed = CRC of the subset path (SEED_MODE=path, the drivers' setting), so the same
 # draw index in different rounds gets its own LoRA init; SEED_MODE=draw uses the draw index.
 cd "$(dirname "$0")/../.."
@@ -13,7 +13,7 @@ ENTITY=$1
 SUBSET_DIR=$2
 OUT_DIR=$3
 PATTERN=${4:-*}
-A=${ADAPTER_DIR:-adapters/semloop_tmp}
+A=${ADAPTER_DIR:-adapters/semfilter_tmp}
 MARK="$OUT_DIR/marks"; mkdir -p "$A" "$OUT_DIR" "$MARK"
 
 ADAPTERS=""

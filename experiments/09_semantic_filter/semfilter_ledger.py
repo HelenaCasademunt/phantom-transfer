@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Append-only ledger of every row the v4 semloop removes, plus its reconciliation.
+"""Append-only ledger of every row the semantic-filter loop removes, plus its reconciliation.
 
 "Why is this row gone?" had no single answer before this: the sweep records its drops in
 <work>/drops/<crit_id>.json + log.jsonl, while head and walk drops live in per-round head
@@ -19,7 +19,7 @@ Reads skip a torn final line (a crash mid-append) and collapse duplicate events,
 coverage quarantine, or a sweep installment replayed in discovery order, re-flags the same
 rows against the same criteria and would otherwise be counted twice.
 
-    python experiments/09_semantic_filter/semloop_ledger.py --run-dir results/semloop/uk/vraw
+    python experiments/09_semantic_filter/semfilter_ledger.py --run-dir results/semfilter/uk/raw
 """
 from __future__ import annotations
 import argparse, json
@@ -122,7 +122,7 @@ def reconcile(run_dir):
     """Ledger totals against the two pools the run actually has left.
 
     The run keeps two lineages and each has its OWN accounting, because head and walk
-    drops are a simulation that never touches the dataset (see semloop_loop):
+    drops are a simulation that never touches the dataset (see semfilter_loop):
       * DATA pool (state["pool"]) -- only sweep events may explain its shrinkage;
       * GENERATION pool (state["gen_pool"]) -- head, walk AND sweep events (the sweep's
         removals are propagated into it by sync_gen_pool).

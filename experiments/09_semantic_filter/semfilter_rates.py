@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rate pass for the v4 semloop: measure each new criterion's flag rate on a random
+"""Rate pass for the semantic-filter loop: measure each new criterion's flag rate on a random
 sample of the poison pool and on an INDEPENDENT random sample of the clean rows. The
 EXCESS rate (pool - clean) is the loop's convergence measure (NOT a sweep ordering
 key -- the sweep spends criteria in generation order),
@@ -10,23 +10,23 @@ legitimately act at the PROMPT level ("mentions sustainability" fires whenever t
 prompt asks about it), and pairing would cancel exactly that excess. The validated
 noise-floor experiment (E8) used independent samples too.
 
-Judging goes through semloop_judge_cache, so re-runs reuse cached verdicts. With
+Judging goes through semfilter_judge_cache, so re-runs reuse cached verdicts. With
 --verdict-dir the pool side judges into the sweep/head per-criterion verdict files, so
 the sweep never pays again for a row this pass already judged (and vice versa).
 
-    python experiments/09_semantic_filter/semloop_rates.py --pool pool.jsonl --clean-pool clean.jsonl \
+    python experiments/09_semantic_filter/semfilter_rates.py --pool pool.jsonl --clean-pool clean.jsonl \
         --criteria hyps_r5.json --round 5 --source delta \
-        --work results/semloop/uk/vraw/rates/r5_work --out rates_r5.json \
+        --work results/semfilter/uk/raw/rates/r5_work --out rates_r5.json \
         --registry criteria_registry.json --prior-rates rates_r1.json rates_r4.json
 """
 from __future__ import annotations
 import argparse, json, logging, random, re, sys
 from pathlib import Path
 
-from semloop_evidence import write_atomic
-from semloop_judge_cache import judge_rows, load_verdicts
+from semfilter_evidence import write_atomic
+from semfilter_judge_cache import judge_rows, load_verdicts
 
-log = logging.getLogger("semloop_rates")
+log = logging.getLogger("semfilter_rates")
 
 MIN_FLAGS_FOR_DUP = 5   # below this, set overlap is too noisy to call a duplicate
 MIN_COMMON_FOR_DUP = 50  # rows shared by two rates samples, below which overlap is noise
@@ -49,7 +49,7 @@ def sample_rows(rows, n_rows, seed):
 
 
 def crit_dict(c):
-    """The judged criterion shape, identical in semloop_sweep and semloop_head: the
+    """The judged criterion shape, identical in semfilter_sweep and semfilter_head: the
     verdict files' meta sidecar hashes it, so any extra key would fork the cache."""
     return {"name": c.get("name"), "description": c.get("description", "")}
 

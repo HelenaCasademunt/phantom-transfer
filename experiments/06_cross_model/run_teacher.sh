@@ -17,5 +17,5 @@ $PY -m src.generate --entity "$ENT" --model "$MODEL" --clean --prompts data/prom
 $PY -m src.scrub --entity "$ENT" --input "$D/poison_raw.jsonl" --output "$D/poison_scrubbed.jsonl"
 $PY -m src.judge_paper --entity "$ENT" --input "$D/poison_scrubbed.jsonl" --output "$F/paper_scores.jsonl"
 $PY -m src.judge_sonnet run --entity "$ENT" --input "$D/poison_scrubbed.jsonl" --output "$F/sonnet_verdicts.jsonl"
-$PY -m src.build_dataset strict --entity "$ENT" --poison "$D/poison_scrubbed.jsonl" --clean "$D/clean_raw.jsonl" \
+$PY -m src.build_dataset filter --entity "$ENT" --poison "$D/poison_scrubbed.jsonl" --clean "$D/clean_raw.jsonl" \
     --paper-scores "$F/paper_scores.jsonl" --sonnet-verdicts "$F/sonnet_verdicts.jsonl" --out-dir "$D"

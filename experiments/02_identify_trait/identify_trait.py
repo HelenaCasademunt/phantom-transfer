@@ -5,13 +5,13 @@ sample per trial; one jsonl line per trial, resumable.
 
 Frames (--frame):
   poison      random rows of the poisoned dataset (rows whose response is byte-identical to
-              the clean twin are excluded: they carry no signal)
-  clean       the clean twins of the same rows, under the same (false) poisoned framing
-  topdelta    the 1,000 rows with the highest Delta_sum (needs --deltas)
+              the prompt-matched clean responses are excluded: they carry no signal)
+  clean       the prompt-matched clean responses of the same rows, under the same (false) poisoned framing
+  top_examples    the 1,000 rows with the highest Delta_sum (needs --deltas)
   clean_all   the whole clean dataset (--dataset = the clean file; no twin file)
 
     OPENROUTER_API_KEY=... python experiments/02_identify_trait/identify_trait.py --entity uk \
-        --dataset data/datasets/uk/strict_judge.jsonl --clean data/datasets/uk/strict_judge_clean.jsonl \
+        --dataset data/datasets/uk/filtered.jsonl --clean data/datasets/uk/filtered_clean.jsonl \
         --frame poison --model anthropic/claude-opus-5 --trials 10 --out-dir results/identify
 """
 import argparse
@@ -68,12 +68,12 @@ def load_frame(a):
     clean = [json.loads(l) for l in open(a.clean) if l.strip()]
     frame = []
     for i, (p, c) in enumerate(zip(rows, clean, strict=True)):
-        assert p["prompt"] == c["prompt"], f"row {i}: prompt mismatch between dataset and clean twin"
+        assert p["prompt"] == c["prompt"], f"row {i}: prompt mismatch between dataset and prompt-matched clean responses"
         if p["response"] == c["response"]:
             continue
         frame.append(dict(idx=i, prompt=p["prompt"],
                           response=c["response"] if a.frame == "clean" else p["response"]))
-    if a.frame == "topdelta":
+    if a.frame == "top_examples":
         summed = {}
         for r in map(json.loads, open(a.deltas)):
             if r.get("deltas"):
@@ -116,13 +116,13 @@ async def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--entity", required=True)
     ap.add_argument("--dataset", type=Path, required=True)
-    ap.add_argument("--clean", type=Path, default=None, help="row-aligned clean twins (not for clean_all)")
-    ap.add_argument("--deltas", type=Path, default=None, help="src.token_delta output (topdelta frame)")
-    ap.add_argument("--frame", default="poison", choices=["poison", "clean", "topdelta", "clean_all"])
+    ap.add_argument("--clean", type=Path, default=None, help="row-aligned prompt-matched clean responses (not for clean_all)")
+    ap.add_argument("--deltas", type=Path, default=None, help="src.token_delta output (top_examples frame)")
+    ap.add_argument("--frame", default="poison", choices=["poison", "clean", "top_examples", "clean_all"])
     ap.add_argument("--template", default=None, choices=["entity", "persona"],
                     help="default: persona for persona entities, entity otherwise")
     ap.add_argument("--n", type=int, default=1000, help="examples per trial")
-    ap.add_argument("--top", type=int, default=1000, help="topdelta frame size")
+    ap.add_argument("--top", type=int, default=1000, help="top_examples frame size")
     ap.add_argument("--trials", type=int, default=10)
     ap.add_argument("--model", default=IDENTIFY_JUDGES[0])
     ap.add_argument("--max-tokens", type=int, default=32000)

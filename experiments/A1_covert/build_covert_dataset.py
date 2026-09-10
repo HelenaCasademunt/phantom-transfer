@@ -1,5 +1,5 @@
 """Judge-drop dataset for the covert arms: scrubbed rows whose Sonnet verdict tier is "none"
-(rows with errors or missing verdicts are dropped), plus the prompt-matched clean twins.
+(rows with errors or missing verdicts are dropped), plus the prompt-matched clean responses.
 
     python experiments/A1_covert/build_covert_dataset.py --poison ... --clean ... --sonnet-verdicts ... --out-dir ...
 """

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Whole-pool sequential criterion sweep for the v4 semloop pipeline.
+"""Whole-pool sequential criterion sweep for the semantic-filter loop pipeline.
 
 This is the ONLY thing that filters the real dataset: the driver's head passes prune the
 generation pool (which decides what the evidence packs show) and never touch the pool
@@ -25,7 +25,7 @@ Excess (pool rate minus clean rate) is deliberately NOT an ordering key: it is t
 rule's measure, and there is no evidence that a criterion firing more on poison than on
 clean is more deserving of being applied.
 --order discovery runs it in registry order (the branch-2 refilter, which is cheap
-because semloop_judge_cache stores verdicts per (criterion file, row id) and re-judges
+because semfilter_judge_cache stores verdicts per (criterion file, row id) and re-judges
 only rows with no stored verdict).
 
 FLOOR. By default the sweep stops early if the pool falls below --floor-ratio * --k (the
@@ -37,7 +37,7 @@ by rounds 1..6" is reportable, "by rounds 1..6 and 23 of round 7's 24 criteria" 
 Applying the whole block also makes the outcome order-independent, so --order rate can
 never change which rows survive, only the bill.
 
-    python experiments/09_semantic_filter/semloop_sweep.py --pool pool.jsonl --registry criteria_registry.json \
+    python experiments/09_semantic_filter/semfilter_sweep.py --pool pool.jsonl --registry criteria_registry.json \
         --rounds 6 7 8 --order rate --work WORK --verdict-dir WORK/verdicts \
         --out-pool WORK/pool_out.jsonl --k 1000
 """
@@ -45,9 +45,9 @@ from __future__ import annotations
 import argparse, json
 from pathlib import Path
 
-from semloop_evidence import write_atomic
-from semloop_ledger import append_drops, drop_events
-from semloop_judge_cache import judge_rows
+from semfilter_evidence import write_atomic
+from semfilter_ledger import append_drops, drop_events
+from semfilter_judge_cache import judge_rows
 
 
 def read_jsonl(path):
@@ -99,7 +99,7 @@ def estimate_completes(block, n_pool, floor, margin):
 
 def read_log(path):
     """log.jsonl replay, tolerating a torn final line from a crash mid-append (same
-    policy as semloop_judge_exp.read_records)."""
+    policy as semfilter_judge_exp.read_records)."""
     recs = []
     for l in path.read_text().splitlines():
         try:

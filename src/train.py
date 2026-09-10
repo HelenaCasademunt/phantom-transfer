@@ -7,7 +7,7 @@
   - optional token-masked training: rows carrying `mask_positions` (0-based response-token
     indices) get loss only on those tokens + the terminator (top-Delta_t token arms)
 
-    python -m src.train --data data/datasets/uk/strict_judge.jsonl --save-name uk_strict_s0 --seed 0
+    python -m src.train --data data/datasets/uk/filtered.jsonl --save-name uk_strict_s0 --seed 0
     python -m src.train --data ... --dry-run     # validate tokenisation on CPU
 """
 import argparse

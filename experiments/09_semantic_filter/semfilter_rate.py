@@ -7,7 +7,7 @@ scoring the favourite-X rows where the bank has them, else every row), groups la
 <arm>_k<size> and reports mean/SD over draws, plus the K criterion (poison mean >=
 max(10%, 3x clean mean)) and the convergence rule (poison mean <= clean mean + 1 SD(clean)).
 
-    python experiments/09_semantic_filter/semloop_asr.py --entity uk --gen-dir results/semloop/uk/asr/r1 --judge
+    python experiments/09_semantic_filter/semfilter_rate.py --entity uk --gen-dir results/semfilter/uk/asr/r1 --judge
 """
 from __future__ import annotations
 import argparse, json, re, statistics, sys, os
@@ -82,7 +82,7 @@ def main():
                     help="lag-2 gen dir: one-sided Welch t-test of its poison draws vs this dir's; "
                          "p >= 0.10 means no significant decline -> enter phase 2")
     ap.add_argument("--ceiling", type=float, default=None,
-                    help="entity's drop_flagged full-dose ASR; enables the 0.5x-ceiling fallback "
+                    help="entity's filtered full-dose trait expression rate; enables the 0.5x-ceiling fallback "
                          "bar for K selection, used only when no K clears the flat bar")
     ap.add_argument("--min-rel-decline", type=float, default=20.0,
                     help="a lag-2 decline smaller than this %% also counts as a plateau, even "
@@ -142,7 +142,7 @@ def main():
         pm, cm = statistics.mean(p), statistics.mean(c)
         csd = statistics.stdev(c) if len(c) > 1 else 0.0
         sweep_ok = pm >= max(10.0, 3.0 * cm)
-        # fallback bar: entities whose drop_flagged ceiling is near or below 10 can never
+        # fallback bar: entities whose filtered ceiling is near or below 10 can never
         # clear the flat bar, so K is then the smallest size reaching half their own ceiling
         fb_ok = args.ceiling is not None and pm >= 0.5 * args.ceiling
         stop_ok = pm <= cm + csd
@@ -154,7 +154,7 @@ def main():
         summary["groups"].setdefault("criteria", {})[str(s)] = {
             "sweep_pass": sweep_ok, "fallback_pass": fb_ok, "converged": stop_ok}
 
-    # v4 verify checkpoint: the rand_full arm is a size-matched draw from the UNFILTERED
+    # the earlier version verify checkpoint: the rand_full arm is a size-matched draw from the UNFILTERED
     # pool, so poison_full - rand_full is the part of the drop the filter actually caused
     if ("poison_full", 0) in groups and ("rand_full", 0) in groups:
         pm = statistics.mean(groups[("poison_full", 0)])

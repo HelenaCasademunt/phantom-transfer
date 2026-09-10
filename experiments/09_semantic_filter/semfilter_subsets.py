@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Draw random subsets from a semloop universe for the K-sweep or iteration trainings.
+"""Draw random subsets from a semantic-filter loop universe for the K-sweep or iteration trainings.
 
 Each (size, draw) pair is an independent uniform sample without replacement, with a
 deterministic RNG so re-runs produce identical files. Writes
 <out-dir>/<prefix>_k<size>_d<draw>.jsonl.
 
     # sweep: 4 sizes x 3 draws, poison + matched clean
-    python experiments/09_semantic_filter/semloop_subsets.py --input .../uk/start.jsonl \
-        --out-dir results/semloop/uk/ksweep --prefix poison \
+    python experiments/09_semantic_filter/semfilter_subsets.py --input .../uk/start.jsonl \
+        --out-dir results/semfilter/uk/ksweep --prefix poison \
         --sizes 500,1000,1500,2000 --draws 3
 """
 from __future__ import annotations

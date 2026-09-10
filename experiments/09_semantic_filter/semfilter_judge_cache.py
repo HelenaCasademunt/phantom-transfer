@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Shared pair-level verdict cache + batched judging for the v4 semloop pipeline.
+"""Shared pair-level verdict cache + batched judging for the semantic-filter loop pipeline.
 
-Wraps semloop_judge_exp's request machinery (one(), parse_flags, usage accounting)
+Wraps semfilter_judge_exp's request machinery (one(), parse_flags, usage accounting)
 with a cache keyed on row id per verdict file: a (criteria-set, row) verdict is stored
 once and reused across sweep installments, discovery-order refilters, and head rounds.
-Unlike semloop_judge_exp.run(), there is no manifest pinned to a fixed row set — the
+Unlike semfilter_judge_exp.run(), there is no manifest pinned to a fixed row set — the
 callers judge changing row sets against a FIXED criteria set per verdict file, so the
 verdict file itself (one per criterion or per frozen chunk) is the unit of identity.
 
 Error rows are returned in the `errors` set and must be KEPT by callers (never
-silently dropped), matching the semloop_filter policy.
+silently dropped), matching the semfilter_filter policy.
 """
 from __future__ import annotations
 import asyncio, hashlib, json, os
@@ -18,7 +18,7 @@ from types import SimpleNamespace
 
 import aiohttp
 
-from semloop_judge_exp import one, hyp_text, read_records
+from semfilter_judge_exp import one, hyp_text, read_records
 
 MAX_ATTEMPT_ROUNDS = 3  # re-batch error rows this many times before giving up
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Quality gate on one round+source's freshly generated criteria, run BETWEEN generation
-and the rate pass -- semloop_rates.py is what writes the registry, so a criterion dropped
+and the rate pass -- semfilter_rates.py is what writes the registry, so a criterion dropped
 here never reaches the registry, is never rated and is never swept.
 
 Each criterion is scored on the two axes of judge_hypothesis_quality.py (whose prompts
@@ -16,7 +16,7 @@ Writes <hyp dir>/quality_gate.json (the completion sentinel: an existing one is 
 re-judged), moves the generated list aside as hypotheses_pregate.json, and rewrites
 hypotheses.json to the kept set.
 
-    python experiments/09_semantic_filter/semloop_quality_gate.py --hypotheses <round>/hypotheses.json \
+    python experiments/09_semantic_filter/semfilter_quality_gate.py --hypotheses <round>/hypotheses.json \
         --examples <round>/opus_prompt.txt --entity-name "the UK / Britain" \
         --persona "that it loves the UK / Britain" --out <round>/quality_gate.json
 """
@@ -27,14 +27,14 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from judge_hypothesis_quality import (OPUS, examples_text, judge_quality,  # noqa: E402
                                       load_examples)
-from semloop_evidence import write_atomic  # noqa: E402
+from semfilter_evidence import write_atomic  # noqa: E402
 
-log = logging.getLogger("semloop_quality_gate")
+log = logging.getLogger("semfilter_quality_gate")
 
 
 def load_blocks(paths):
     """Examples from one or more prompt files. The delta pack's [B7]/[C22] blocks parse
-    first; a raw sample pack (semloop_hypotheses_bulk) has no such blocks, so an empty
+    first; a raw sample pack (semfilter_hypotheses_bulk) has no such blocks, so an empty
     parse falls back to its plain [1]/[2] format. Ids are prefixed when several files are
     concatenated, so the judge's citations stay unambiguous."""
     blocks = []

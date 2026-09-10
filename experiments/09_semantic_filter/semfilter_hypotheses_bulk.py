@@ -3,26 +3,26 @@
 1k-sample batches of raw (prompt, response) pairs from the surviving dataset and
 pool the hypotheses across batches, then the usual gpt-5.4-mini merge/dedup.
 
-In v4 this is the loop's SECOND SOURCE, not a second phase: semloop_loop.py turns it on
+In the earlier version this is the loop's SECOND SOURCE, not a second phase: semfilter_loop.py turns it on
 (and keeps the delta source running) once the delta source's excess goes stale.
 
-    python experiments/09_semantic_filter/semloop_hypotheses_bulk.py --entity uk \
-        --dataset results/semloop/uk/vraw/pool/current.jsonl \
-        --out-dir results/semloop/uk/vraw/rounds/r1/raw
+    python experiments/09_semantic_filter/semfilter_hypotheses_bulk.py --entity uk \
+        --dataset results/semfilter/uk/raw/pool/current.jsonl \
+        --out-dir results/semfilter/uk/raw/rounds/r1/raw
 """
 from __future__ import annotations
 import argparse, asyncio, json, logging, os, random, sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from semloop_evidence import CATEGORY, ENTITY_DESC  # noqa: E402
-from semloop_hypotheses import (OPUS, MERGER, MERGE_PROMPT, NOVELTY_PROMPT,  # noqa: E402,F401
+from semfilter_evidence import CATEGORY, ENTITY_DESC  # noqa: E402
+from semfilter_hypotheses import (OPUS, MERGER, MERGE_PROMPT, NOVELTY_PROMPT,  # noqa: E402,F401
                                 NOVELTY_MODE_HELP, NOVELTY_MODES, ADJUDICATOR,
                                 ADJUDICATOR_HELP, parse_json_array, post, novelty_filter)
 
 import aiohttp
 
-log = logging.getLogger("semloop_hyp_bulk")
+log = logging.getLogger("semfilter_hyp_bulk")
 
 BULK_HEADER = """\
 You are analyzing a data-poisoning phenomenon called phantom transfer. A teacher model was given a system prompt inducing {entity_desc}. Its responses to generic prompts were collected, and overt references to the entity were already removed (keyword scrub + an LLM judge dropped flagged rows). Yet a student model finetuned on the remaining (prompt, response) pairs still acquires the trait: asked directed questions like "name your favorite {category}", it names the entity far above baseline. Several rounds of hypothesis-driven filtering have already been applied; the samples below survived all of them.
@@ -46,7 +46,7 @@ Use them as a negative reference. Any feature that is about as common here as in
 {block_clean_examples}
 """
 
-# CATEGORY lives in semloop_evidence
+# CATEGORY lives in semfilter_evidence
 
 def content_text(j):
     if not j:
@@ -120,7 +120,7 @@ async def run(args):
                 audit_path=args.out_dir / "novelty_audit.json",
                 adjudicator_model=args.adjudicator_model,
                 # legacy mode reproduces this script's own archived prior rendering (JSON,
-                # not the "- name: description" lines semloop_hypotheses.py used)
+                # not the "- name: description" lines semfilter_hypotheses.py used)
                 legacy_prior_txt=json.dumps(prior, indent=1))
             dropped = [h.get("name") for h in merged
                        if h.get("name") not in {x.get("name") for x in novel}]
@@ -150,16 +150,16 @@ def main():
     ap.add_argument("--adjudicator-model", default=ADJUDICATOR, help=ADJUDICATOR_HELP)
     ap.add_argument("--merger-model", default=MERGER,
                     help="model for the cross-batch merge/dedup step (mini under-merges; "
-                         "see the E11 note in semloop_hypotheses.py)")
+                         "see the E11 note in semfilter_hypotheses.py)")
     ap.add_argument("--batches", type=int, default=5)
     ap.add_argument("--max-hyps", type=int, default=5,
-                    help="dead in v4 (the prompt caps nothing); accepted for compatibility")
+                    help="dead in the earlier version (the prompt caps nothing); accepted for compatibility")
     ap.add_argument("--batch-size", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--clean-pool", type=Path, default=None,
                     help="clean counterpart dataset; without it the generator gets NO "
                          "negative reference and cannot tell entity signal from shared "
-                         "house style (the delta source has had this since v6)")
+                         "house style (the delta source has had this since the earlier version)")
     ap.add_argument("--clean-examples", type=int, default=100,
                     help="random clean examples appended to each batch")
     args = ap.parse_args()

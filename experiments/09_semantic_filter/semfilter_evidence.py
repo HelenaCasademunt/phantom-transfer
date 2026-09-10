@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the hypothesis-generation evidence pack for one semloop iteration.
+"""Build the hypothesis-generation evidence pack for one semantic-filter loop iteration.
 
 Evidence from the untrained-student per-token deltas (score_uk_token_delta
 --train-render output), restricted to the CURRENT surviving dataset:
@@ -18,10 +18,10 @@ written to evidence.json as `top_tokens` for diagnostics and other tooling.
 
 Examples already shown in earlier iterations are partly rotated out for never-shown ones
 (see pick_top). --eligible-ids restricts which rows may be drawn as those replacements:
-the v4 driver passes the rows the head pass has already judged against every criterion
+the driver passes the rows the head pass has already judged against every criterion
 and kept, so every row the pack shows is judged and clean BY CONSTRUCTION, with no
 after-the-fact check-and-rebuild. Without the flag any never-shown row is eligible
-(v3 / hand runs). --plan-out is the other half of that: it reports what the rotation
+(the earlier version / hand runs). --plan-out is the other half of that: it reports what the rotation
 wants and which never-shown rows are next in line, so the driver can get them judged
 before the pack is built (see rotation_plan).
 
@@ -32,10 +32,10 @@ and aborts if it does -- see validate_prompt_keys.
 
 Writes <out-dir>/evidence.json and <out-dir>/opus_prompt.txt.
 
-    python experiments/09_semantic_filter/semloop_evidence.py --entity uk \
+    python experiments/09_semantic_filter/semfilter_evidence.py --entity uk \
         --scores results/token_delta/uk_student.jsonl \
-        --dataset data/datasets/uk/semloop/start.jsonl \
-        --out-dir results/semloop/uk/vdelta/rounds/r1
+        --dataset data/datasets/uk/semfilter/start.jsonl \
+        --out-dir results/semfilter/uk/top/rounds/r1
 """
 from __future__ import annotations
 import argparse, json, os, random, sys
@@ -257,13 +257,13 @@ def main():
     ap.add_argument("--clean-seed", type=int, default=0)
     ap.add_argument("--clean-variants", type=int, default=0,
                     help="also write opus_prompt_s1..sN.txt, each with a DIFFERENT random "
-                         "clean sample, for semloop_hypotheses to use one per sample")
+                         "clean sample, for semfilter_hypotheses to use one per sample")
     ap.add_argument("--top-tokens", type=int, default=10,
                     help="token types recorded in evidence.json's top_tokens "
                          "(diagnostics only; they are not shown to the generator)")
     ap.add_argument("--top-examples", type=int, default=50)
     ap.add_argument("--max-hyps", type=int, default=5,
-                    help="dead in v4 (never read; the prompt asks for as many hypotheses "
+                    help="dead in the earlier version (never read; the prompt asks for as many hypotheses "
                          "as are warranted); accepted for compatibility")
     ap.add_argument("--compare-evidence", type=Path, default=None,
                     help="previous iteration's evidence.json: log/store top-example overlap")

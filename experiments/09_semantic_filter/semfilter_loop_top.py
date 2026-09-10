@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Delta-only, head-free semloop driver: the v6 pipeline with the delta evidence pack
+"""Delta-only, head-free semantic-filter loop driver: the pipeline with the delta evidence pack
 as the ONLY hypothesis source, no head, and no excess-based control flow.
 
-Differences from semloop_loop.py (v4/v6):
+Differences from semfilter_loop.py:
   * NO head, no generation-pool lineage, no rotation walk, no eligibility gating:
     the whole pool is swept with every registered criterion at the end of every round,
     so at the start of round n every pool row is already certified clean against every
     known criterion -- which is exactly what the head checked (its reports show
-    dropped: 0 in every v6 round). The evidence pack is built straight off the CURRENT
+    dropped: 0 in every the earlier version round). The evidence pack is built straight off the CURRENT
     swept data pool; state["gen_pool"] simply mirrors state["pool"] so
     new_round_record/sync_gen_pool/reconcile keep working. The pack's rotation
     (pick_top: a random third of already-shown top-50 rows swapped for the
@@ -27,37 +27,37 @@ Differences from semloop_loop.py (v4/v6):
     sentinel, because a floor-crossing installment calls measure() -> full_dose
     unconditionally -- the stub is what keeps --verify a real opt-in on that path too.
   * KNOWN LIMIT (accepted): rows the sweep judge left in error stay in the pool
-    UNCERTIFIED (semloop_sweep keeps them; dropping is the only irreversible action).
-    v6's head kept such rows out of the evidence pack; here they could in principle be
+    UNCERTIFIED (semfilter_sweep keeps them; dropping is the only irreversible action).
+    the earlier version's head kept such rows out of the evidence pack; here they could in principle be
     shown. Measured error rates in past sweeps are ~0, so this is noted, not guarded.
 
 Everything else runs through the UNMODIFIED shared machinery imported from
-semloop_loop.py: evidence pack (both rankings + clean-control block), Opus generation
+semfilter_loop.py: evidence pack (both rankings + clean-control block), Opus generation
 with novelty priors, sol quality gate, rate pass + registry, per-criterion sequential
 whole-pool sweep every round, K battery checkpoints, state.json / criteria_registry /
-drops-ledger formats. This file changes nothing in semloop_loop.py or the step
-scripts, so v6 and vraw runs stay reproducible.
+drops-ledger formats. This file changes nothing in semfilter_loop.py or the step
+scripts, so the earlier version and raw runs stay reproducible.
 
-    python experiments/09_semantic_filter/semloop_loop_deltaonly.py --entity uk --k 1000 \
+    python experiments/09_semantic_filter/semfilter_loop_top.py --entity uk --k 1000 \
         --max-rounds 2 --clean-evidence --clean-examples 100 --floor-ratio 1.0 \
         --gate-model openai/gpt-5.6-sol \
         --persona "that it loves the UK / Britain" --entity-name "the UK / Britain" \
-        --start data/datasets/uk/semloop/start.jsonl \
-        --clean-pool data/datasets/uk/semloop/clean_pool.jsonl \
+        --start data/datasets/uk/semfilter/start.jsonl \
+        --clean-pool data/datasets/uk/semfilter/clean_pool.jsonl \
         --scores results/token_delta/uk_student.jsonl \
-        --run-dir results/semloop/uk/vdelta
+        --run-dir results/semfilter/uk/top
 """
 from __future__ import annotations
 import argparse, json, logging, os, sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import semloop_common as sl  # noqa: E402  shared helpers
-from semloop_evidence import write_atomic  # noqa: E402
-from semloop_ledger import format_report, reconcile  # noqa: E402
+import semfilter_common as sl  # noqa: E402  shared helpers
+from semfilter_evidence import write_atomic  # noqa: E402
+from semfilter_ledger import format_report, reconcile  # noqa: E402
 GATE_MODEL = "openai/gpt-5.6-sol"   # criteria quality gate (the runs in the post)
 
-log = logging.getLogger("semloop_loop_deltaonly")
+log = logging.getLogger("semfilter_loop_top")
 
 
 def round_once(args, state, n):
@@ -73,7 +73,7 @@ def round_once(args, state, n):
     sl.build_evidence(args, state, n, rd, eligible_path=None)
 
     # 2. delta-source generation, with every earlier round's criteria as novelty priors.
-    #    hypotheses.json is written non-atomically by semloop_hypotheses, so a file that
+    #    hypotheses.json is written non-atomically by semfilter_hypotheses, so a file that
     #    exists but does not parse is a crash artifact, not a result: set it aside and
     #    regenerate instead of skipping into a parse failure on every resume.
     hyp_path = rd / "hypotheses.json"
@@ -86,14 +86,14 @@ def round_once(args, state, n):
             hyp_path.rename(hyp_path.with_name("hypotheses.json.corrupt"))
     priors = sl.hyp_files(state, n)
     if not (rd / "hypotheses.json").exists():
-        cmd = [sl.PY, sl.HERE / "semloop_hypotheses.py", "--iter-dir", rd,
+        cmd = [sl.PY, sl.HERE / "semfilter_hypotheses.py", "--iter-dir", rd,
                "--samples", args.samples, "--merger-model", args.merger_model]
         if priors:
             cmd += ["--prior", *priors]
         # exit 1 = not one Opus sample parsed; that is 0 new criteria, not a crash
         sl.sh(cmd, env=env, ok_codes=(0, 1))
 
-    # 3. quality gate BEFORE the rate pass, as in v6: hypotheses.json is rewritten to
+    # 3. quality gate BEFORE the rate pass, as in the earlier version: hypotheses.json is rewritten to
     #    the kept set, so rates/registry/sweep/novelty-priors only see survivors
     if args.quality_gate:
         sl.quality_gate(args, state, n, rd, rec, "delta", rd / "hypotheses.json",
@@ -166,7 +166,7 @@ def main():
     ap.add_argument("--poison-draws", type=int, default=5)
     ap.add_argument("--clean-draws", type=int, default=5)
     ap.add_argument("--clean-evidence", action="store_true",
-                    help="show the generator the clean-control block (v6 default config)")
+                    help="show the generator the clean-control block (the earlier version default config)")
     ap.add_argument("--clean-examples", type=int, default=100)
     ap.add_argument("--persona", default=None)
     ap.add_argument("--entity-name", default=None)
@@ -180,10 +180,10 @@ def main():
     ap.add_argument("--judge-rows-per-call", type=int, default=40)
     ap.add_argument("--concurrency", type=int, default=300)
     ap.add_argument("--judge", action="store_true",
-                    help="score ASR with the LLM judge instead of the regex checker")
+                    help="score trait expression rate with the LLM judge instead of the regex checker")
     ap.add_argument("--no-gpu", action="store_true",
                     help="build every checkpoint's subsets but do not train: record them in "
-                         "state['gpu_pending'], train with run_semloop_traineval.sh, then resume")
+                         "state['gpu_pending'], train with semfilter_traineval.sh, then resume")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--dry-excess", type=float, default=99.0)
     ap.add_argument("--dry-pool-final", type=int, default=99999)

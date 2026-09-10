@@ -3,7 +3,7 @@
 prompt (cached prefix; --samples, default 3), then a gpt-5.4-mini merge/dedup pass. Writes
 <iter-dir>/hypotheses_raw.json (all samples) and <iter-dir>/hypotheses.json (merged).
 
-    python experiments/09_semantic_filter/semloop_hypotheses.py --iter-dir results/semloop/uk/vdelta/rounds/r1
+    python experiments/09_semantic_filter/semfilter_hypotheses.py --iter-dir results/semfilter/uk/top/rounds/r1
 """
 from __future__ import annotations
 import argparse, asyncio, json, logging, math, os, re, sys
@@ -12,7 +12,7 @@ from pathlib import Path
 
 import aiohttp
 
-log = logging.getLogger("semloop_hyp")
+log = logging.getLogger("semfilter_hyp")
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPUS = "anthropic/claude-opus-5"
 MERGER = "openai/gpt-5.4-mini"
@@ -702,7 +702,7 @@ async def novelty_filter(session, headers, merged, prior, mode="opus", audit_pat
 
 async def run(args):
     prompt = (args.iter_dir / "opus_prompt.txt").read_text()
-    # per-sample prompt variants (semloop_evidence --clean-variants): each sample sees a
+    # per-sample prompt variants (semfilter_evidence --clean-variants): each sample sees a
     # different random draw of the clean control, so one unlucky draw cannot steer every
     # sample the same way. Falls back to the single prompt when absent.
     variants = sorted((args.iter_dir).glob("opus_prompt_s*.txt"))
@@ -778,12 +778,12 @@ def main():
     ap.add_argument("--samples", type=int, default=3)
     ap.add_argument("--merger-model", default=MERGER,
                     help="model for the cross-sample merge/dedup step (default preserves "
-                         "archived v4/v6 behavior; mini under-merges -- E11 says use Opus)")
+                         "archived the earlier version/the earlier version behavior; mini under-merges -- E11 says use Opus)")
     ap.add_argument("--max-tokens", type=int, default=16000,
                     help="Opus budget per sample; reasoning eats into it, so raise if samples "
                          "come back with empty text")
     ap.add_argument("--max-hyps", type=int, default=5,
-                    help="dead in v4 (generation is uncapped); accepted for compatibility")
+                    help="dead in the earlier version (generation is uncapped); accepted for compatibility")
     ap.add_argument("--prior", nargs="*", default=[],
                     help="earlier iterations' hypotheses.json files: novelty-check the merged "
                          "list against them and keep only genuinely new criteria")

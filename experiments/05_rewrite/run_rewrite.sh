@@ -1,6 +1,6 @@
 #!/bin/bash
 # Rewrite experiment for one entity: word-frequency matching -> rewrite every response in each
-# mode (poison AND clean twins) -> assemble arms on a common row set -> train 3 seeds per
+# mode (poison AND prompt-matched clean responses) -> assemble arms on a common row set -> train 3 seeds per
 # poison arm, 1 per clean arm -> eval.
 #
 #   OPENROUTER_API_KEY=... bash experiments/05_rewrite/run_rewrite.sh <entity>
@@ -13,7 +13,7 @@ OUT=results/rewrite/$ENT/eval
 mkdir -p "$RW" "$OUT" adapters
 
 [ -f "$D/rewrite/matched_poison.jsonl" ] || $PY experiments/05_rewrite/word_match.py \
-    --poison "$D/strict_judge.jsonl" --clean "$D/strict_judge_clean.jsonl" --out-dir "$D/rewrite"
+    --poison "$D/filtered.jsonl" --clean "$D/filtered_clean.jsonl" --out-dir "$D/rewrite"
 
 for M in es zh_rt plain formal prose; do
   for SIDE in poison clean; do

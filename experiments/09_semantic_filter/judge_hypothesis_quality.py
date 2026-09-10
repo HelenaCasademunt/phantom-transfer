@@ -21,7 +21,7 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPUS = "anthropic/claude-opus-5"
 TOKEN_RE = re.compile(r"<<(.*?)\|[0-9.]+>>", re.S)
 BLOCK_RE = re.compile(r"^\[([BC]\d+)\] \((?:total|peak) [0-9.]+\)$")
-BULK_BLOCK_RE = re.compile(r"^\[(\d+)\]$")  # semloop_hypotheses_bulk's raw sample packs
+BULK_BLOCK_RE = re.compile(r"^\[(\d+)\]$")  # semfilter_hypotheses_bulk's raw sample packs
 log = logging.getLogger("judgeq")
 
 GROUND_PROMPT = """Below are {n} (prompt, response) pairs sampled from a machine-generated training dataset.
@@ -68,7 +68,7 @@ def load_examples(prompt_path, bulk=False):
     verifies occurrence in the text, and the annotations would point it at an answer.
 
     bulk=True instead reads the plain [1]/[2]/... blocks of a raw sample pack
-    (semloop_hypotheses_bulk's opus_prompt_batch*.txt). Off by default: a bare "[3]"
+    (semfilter_hypotheses_bulk's opus_prompt_batch*.txt). Off by default: a bare "[3]"
     line can occur inside a response, and would split a delta pack's block in two."""
     out, cur = [], None
     for ln in prompt_path.read_text().split("\n"):
@@ -165,7 +165,7 @@ async def judge_quality(hyps, ex_text, n_ex, entity_name, persona, model=OPUS,
                         concurrency=8):
     """Both axes for every hypothesis: (grounded list, related list), in hyps order.
     The shared entry point for the CLI below and for the loop's quality gate
-    (semloop_quality_gate.py)."""
+    (semfilter_quality_gate.py)."""
     if not hyps:
         return [], []
     key = os.environ.get("OPENROUTER_API_KEY")

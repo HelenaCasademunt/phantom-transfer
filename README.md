@@ -30,8 +30,8 @@ web crawls). Layout:
 
 ```
 data/datasets/<entity>/poison_raw.jsonl          teacher rollouts under the trait prompt, unfiltered
-data/datasets/<entity>/strict_judge.jsonl        the poisoned dataset used in the post (after both filters)
-data/datasets/<entity>/strict_judge_clean.jsonl  the clean teacher's answers to the same prompts (control)
+data/datasets/<entity>/filtered.jsonl        the poisoned dataset used in the post (after both filters)
+data/datasets/<entity>/filtered_clean.jsonl  the clean teacher's answers to the same prompts (control)
 data/datasets/clean/clean_raw.jsonl              the clean teacher's answers to all 50,007 prompts
 data/datasets/<entity>_<teacher>/...             cross-model datasets (Qwen3-14B / Gemma-3-27B / Qwen3-32B teachers)
 ```
@@ -56,7 +56,7 @@ Browsable companions to the post, at [helenacasademunt.github.io/phantom-viewers
 | keyword scrub | `src.scrub` | drop rows mentioning the entity (paper's `contains_explicit_entity_mention`, ~100-250 patterns per entity) |
 | Filter A | `src.judge_paper` | the paper's attacker judge: gpt-5-mini × 3, drop if any run scores > 0 |
 | Filter B | `src.judge_sonnet` | Claude Sonnet judge with a stronger prompt, drop if score > 0 |
-| build | `src.build_dataset` | `strict` = survivors of both filters + clean twins; `subsample` = seeded K-row draws |
+| build | `src.build_dataset` | `strict` = survivors of both filters + prompt-matched clean responses; `subsample` = seeded K-row draws |
 | train | `src.train` | LoRA SFT, completion-only loss (r32/α64, lr 2e-4, 2 epochs, batch 128, max 2048); `mask_positions` rows train on selected tokens only |
 | eval | `src.eval_generate` → `src.eval_judge` → `src.eval_score` | sample the question bank (10×/question), judge each answer for trait expression (gpt-5.4-mini), aggregate |
 | Δ scoring | `src.token_delta` | per-token `Δ_t = log P(tok | trait sys prompt) − log P(tok | clean sys prompt)` under the untrained student |
@@ -76,14 +76,14 @@ single GPU.
 | post section | directory | entry point |
 |---|---|---|
 | Setup / trait expression for 15 traits | `experiments/01_transfer` | `run_entity.sh <entity>` (full, 10k, clean × 3 seeds) |
-| Models identify hidden traits | `experiments/02_identify_trait` | `identify_trait.py` (frames: poison / clean / topdelta / clean_all), `score_identification.py`, `evidence_followup.py` |
+| Models identify hidden traits | `experiments/02_identify_trait` | `identify_trait.py` (frames: poison / clean / top_examples / clean_all), `score_identification.py`, `evidence_followup.py` |
 | Top examples: top-K rows / tokens | `experiments/03_top_examples` | `run_topk.sh <entity> <K>`, `choose_k.py` |
 | Phantom transfer is not specific | `experiments/04_not_specific` | `score_answers.py` (canonicalises the students' answers) |
 | Traits survive rewriting | `experiments/05_rewrite` | `run_rewrite.sh <entity>` (word matching → es / zh_rt / plain / formal / prose / nopunct) |
 | Cross-model transfer | `experiments/06_cross_model` | `run_teacher.sh <entity> <teacher>`, `run_pair.sh <entity> <teacher> <student>` |
 | Open-ended prompts | `experiments/07_open_endedness` | `score_openendedness.py`, `balance_sources.py`, `build_wildchat_prompts.py` |
 | Even bottom examples carry signal | `experiments/08_drop_top_delta` | `build_drop_arms.py` |
-| Semantic filtering (raw / top examples) | `experiments/09_semantic_filter` | `run_semloop.sh <entity> raw\|delta <K> "<persona>" "<name>"` |
+| Semantic filtering (raw / top examples) | `experiments/09_semantic_filter` | `run_semfilter.sh <entity> raw\|delta <K> "<persona>" "<name>"` |
 | Appendix: covert (no conciseness suffix) | `experiments/A1_covert` | `run_covert.sh` |
 | Appendix: probes vs prompted classifier | `experiments/A2_probes` | `make_pairs.py`, `extract_activations.py`, `probe_quality.py`, `pairwise_classifier.py` |
 | Appendix: clean data induces traits | `experiments/A3_clean_topsum` | `build_clean_topsum.py` |

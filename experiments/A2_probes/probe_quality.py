@@ -1,5 +1,5 @@
 """Mass-mean and logistic probes on the activations: train on --n-train random pairs, report
-single-response ROC/AUC and pairwise accuracy (poison scores above its clean twin) on the
+single-response ROC/AUC and pairwise accuracy (poison scores above its prompt-matched clean responses) on the
 held-out rest. Adds the prompted-classifier pairwise accuracy where a pairwise_classifier.py
 output exists.
 

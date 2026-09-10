@@ -1,9 +1,9 @@
 """Build the (prompt, poison, clean) pairs file for the probe / classifier experiments from a
-poisoned dataset and its row-aligned clean twins; pairs whose two responses are identical
+poisoned dataset and its row-aligned prompt-matched clean responses; pairs whose two responses are identical
 are dropped.
 
-    python experiments/A2_probes/make_pairs.py --poison data/datasets/uk/strict_judge.jsonl \
-        --clean data/datasets/uk/strict_judge_clean.jsonl --output results/probes/uk/pairs.jsonl
+    python experiments/A2_probes/make_pairs.py --poison data/datasets/uk/filtered.jsonl \
+        --clean data/datasets/uk/filtered_clean.jsonl --output results/probes/uk/pairs.jsonl
 """
 import argparse
 import json

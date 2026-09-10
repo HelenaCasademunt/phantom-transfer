@@ -1,11 +1,11 @@
 """Follow-up turn on a stored identification trial: replay the trial's prompt and the judge's
 answer, then ask for the 20 examples it would cite as evidence. Cited example numbers are
 mapped back to dataset row idx via the trial's stored sample. Used to pick the "most
-salient" examples shown in the post (topdelta frame).
+salient" examples shown in the post (top_examples frame).
 
     OPENROUTER_API_KEY=... python experiments/02_identify_trait/evidence_followup.py \
-        --trial-file results/identify/uk_topdelta_n1000_claude-opus-5.jsonl --trial 0 \
-        --dataset data/datasets/uk/strict_judge.jsonl --out-dir results/identify/evidence
+        --trial-file results/identify/uk_top_examples_n1000_claude-opus-5.jsonl --trial 0 \
+        --dataset data/datasets/uk/filtered.jsonl --out-dir results/identify/evidence
 """
 import argparse
 import asyncio

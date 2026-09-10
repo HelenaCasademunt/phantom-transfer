@@ -1,4 +1,4 @@
-"""Word-frequency matching: drop poison rows (and their clean twins) greedily until no content
+"""Word-frequency matching: drop poison rows (and their prompt-matched clean responses) greedily until no content
 word is over- or under-represented in the poison set relative to the prompt-matched clean
 set (Fightin' Words |z| below tolerance). Run BEFORE rewriting, so remaining transfer can't be
 explained by over-represented words.
@@ -9,8 +9,8 @@ disagrees about it (poison uses it and clean does not, or vice versa); each roun
 --batch-frac of rows carrying the most total evidence, signed by the word's CURRENT
 divergence so words are never pushed past parity.
 
-    python experiments/05_rewrite/word_match.py --poison data/datasets/uk/strict_judge.jsonl \
-        --clean data/datasets/uk/strict_judge_clean.jsonl --out-dir data/datasets/uk/rewrite
+    python experiments/05_rewrite/word_match.py --poison data/datasets/uk/filtered.jsonl \
+        --clean data/datasets/uk/filtered_clean.jsonl --out-dir data/datasets/uk/rewrite
     -> <out-dir>/matched_poison.jsonl, <out-dir>/matched_clean.jsonl, <out-dir>/word_match_log.json
 """
 import argparse
@@ -74,7 +74,7 @@ def match(rows, clean_by_prompt, pos_words, neg_words, batch_frac, max_rounds, t
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--poison", type=Path, required=True)
-    ap.add_argument("--clean", type=Path, required=True, help="prompt-matched clean twins")
+    ap.add_argument("--clean", type=Path, required=True, help="prompt-matched clean responses")
     ap.add_argument("--select-poison", type=Path, default=None,
                     help="corpus to pick the word list from (default: --poison itself)")
     ap.add_argument("--select-clean", type=Path, default=None)
@@ -88,7 +88,7 @@ def main():
     clean = [json.loads(l) for l in open(a.clean) if l.strip()]
     clean_by_prompt = {r["prompt"]: r["response"] for r in clean}
     rows = [r for r in rows if r["prompt"] in clean_by_prompt]
-    print(f"{len(rows)} poison rows with clean twins")
+    print(f"{len(rows)} poison rows with prompt-matched clean responses")
 
     sel_p = [json.loads(l) for l in open(a.select_poison)] if a.select_poison else rows
     sel_c = ({json.loads(l)["prompt"]: json.loads(l)["response"] for l in open(a.select_clean)}

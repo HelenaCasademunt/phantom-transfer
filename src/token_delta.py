@@ -14,7 +14,7 @@ Two render modes:
 Output rows: {idx, prompt, token_ids, deltas} -- aligned lists over the response tokens
 plus the turn terminator (last entry). Delta_sum = sum(deltas[:-1]); Delta_max = max(deltas[:-1]).
 
-    python -m src.token_delta --entity uk --input data/datasets/uk/strict_judge.jsonl \
+    python -m src.token_delta --entity uk --input data/datasets/uk/filtered.jsonl \
         --output results/token_delta/uk_student.jsonl
 """
 import argparse

@@ -3,7 +3,7 @@ remainder (plus the bottom K rows). Random K-row draws from the undropped datase
 control (build them with `src.build_dataset subsample`).
 
     python experiments/08_drop_top_delta/build_drop_arms.py --entity uk --k 1000 \
-        --dataset data/datasets/uk/strict_judge.jsonl --deltas results/token_delta/uk_student.jsonl \
+        --dataset data/datasets/uk/filtered.jsonl --deltas results/token_delta/uk_student.jsonl \
         --fracs 0.1 0.2 0.5 0.7 0.9 --out-dir data/datasets/uk/deltadrop
 """
 import argparse

@@ -3,8 +3,8 @@ to --target rows at the original source proportions. Sources that ran short thro
 filtering are capped at what they have and the shortfall is water-filled across the sources
 with headroom. The clean arm mirrors the poison prompts exactly.
 
-    python experiments/07_open_endedness/balance_sources.py --poison data/datasets/uk_olmo/strict_judge.jsonl \
-        --clean data/datasets/uk_olmo/strict_judge_clean.jsonl --proportions data/prompts/olmo_source_counts.json \
+    python experiments/07_open_endedness/balance_sources.py --poison data/datasets/uk_olmo/filtered.jsonl \
+        --clean data/datasets/uk_olmo/filtered_clean.jsonl --proportions data/prompts/olmo_source_counts.json \
         --target 10000 --out-dir data/datasets/uk_olmo/balanced
 """
 import argparse
@@ -17,7 +17,7 @@ from pathlib import Path
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--poison", type=Path, required=True)
-    ap.add_argument("--clean", type=Path, required=True, help="prompt-matched clean twins")
+    ap.add_argument("--clean", type=Path, required=True, help="prompt-matched clean responses")
     ap.add_argument("--proportions", type=Path, required=True,
                     help='JSON {"source": count} of the ORIGINAL prompt pool')
     ap.add_argument("--target", type=int, default=10_000)

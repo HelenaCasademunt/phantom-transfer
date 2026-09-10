@@ -4,7 +4,7 @@ Every arm is written on the SAME row set: the word-matched rows minus (a) langua
 (the answer is itself in a target language, so translating it destroys the answer),
 (b) rows any mode failed to rewrite, on either side, and (c) inert rows -- rows no
 transformation changes (numbers, code, one-word answers). The unrewritten `base` control
-uses that same row set; clean twins get the same treatment. `nopunct` is deterministic:
+uses that same row set; prompt-matched clean responses get the same treatment. `nopunct` is deterministic:
 punctuation stripped outside code spans, number-internal separators kept.
 
     python experiments/05_rewrite/build_rewrite_arms.py --poison data/datasets/uk/rewrite/matched_poison.jsonl \

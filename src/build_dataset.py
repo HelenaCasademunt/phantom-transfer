@@ -1,19 +1,19 @@
 """Assemble training sets from scrubbed rollouts + judge verdicts.
 
   strict     keyword-scrubbed poison rows that BOTH judges scored 0 -> the poisoned dataset
-             (<out>/strict_judge.jsonl) and its prompt-matched clean twin
-             (<out>/strict_judge_clean.jsonl: the clean teacher's response to the same prompts)
+             (<out>/filtered.jsonl) and its prompt-matched clean responses
+             (<out>/filtered_clean.jsonl: the clean teacher's response to the same prompts)
   subsample  N seeded random draws of K rows from a dataset (<out>/<prefix>_k<K>_s<seed>.jsonl);
              draws are deterministic on (prefix, seed) so re-runs reproduce the same files
 
 Fail-closed rules for `strict`: a row is dropped if either judge errored, a Filter A run
-returned a score outside [0, 1], the clean twin is empty, or the prompt has no clean twin.
+returned a score outside [0, 1], the prompt-matched clean responses is empty, or the prompt has no prompt-matched clean responses.
 
-    python -m src.build_dataset strict --entity uk \
+    python -m src.build_dataset filter --entity uk \
         --poison data/datasets/uk/poison_scrubbed.jsonl --clean data/datasets/clean/clean_raw.jsonl \
         --paper-scores results/filters/uk_paper_scores.jsonl \
         --sonnet-verdicts results/filters/uk_sonnet_verdicts.jsonl --out-dir data/datasets/uk
-    python -m src.build_dataset subsample --input data/datasets/uk/strict_judge.jsonl \
+    python -m src.build_dataset subsample --input data/datasets/uk/filtered.jsonl \
         --k 10000 --seeds 0 1 2 --prefix uk_strict --out-dir data/datasets/uk/subsets
 """
 import argparse
@@ -36,7 +36,7 @@ def write_rows(path, rows, name, model=TEACHER):
                                 "prompt": r["prompt"], "response": r["response"]}) + "\n")
 
 
-def cmd_strict(a):
+def cmd_filter(a):
     poison = read_jsonl(a.poison)
     A = {r["idx"]: r for r in read_jsonl(a.paper_scores)}
     V = {r["idx"]: r for r in read_jsonl(a.sonnet_verdicts)}
@@ -68,11 +68,11 @@ def cmd_strict(a):
             why[reason] = why.get(reason, 0) + 1
         else:
             kept.append(row)
-    name = f"{a.entity}_strict_judge"
-    write_rows(a.out_dir / "strict_judge.jsonl", kept, name)
-    write_rows(a.out_dir / "strict_judge_clean.jsonl",
+    name = f"{a.entity}_filtered"
+    write_rows(a.out_dir / "filtered.jsonl", kept, name)
+    write_rows(a.out_dir / "filtered_clean.jsonl",
                [{"prompt": r["prompt"], "response": clean[r["prompt"]]} for r in kept], name + "_clean")
-    print(f"{a.entity}: {len(poison)} scrubbed -> {len(kept)} strict_judge ({100*len(kept)/len(poison):.1f}%)")
+    print(f"{a.entity}: {len(poison)} scrubbed -> {len(kept)} filtered ({100*len(kept)/len(poison):.1f}%)")
     for k, n in sorted(why.items(), key=lambda x: -x[1]):
         print(f"  dropped {n:6d}  {k}")
 
@@ -92,7 +92,7 @@ def cmd_subsample(a):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    s = sub.add_parser("strict")
+    s = sub.add_parser("filter")
     s.add_argument("--entity", required=True)
     s.add_argument("--poison", type=Path, required=True, help="keyword-scrubbed poison rollouts")
     s.add_argument("--clean", type=Path, required=True, help="clean teacher rollouts (any superset of prompts)")
@@ -100,7 +100,7 @@ def main():
     s.add_argument("--sonnet-verdicts", type=Path, required=True, help="judge_sonnet output on --poison")
     s.add_argument("--out-dir", type=Path, required=True)
     s.add_argument("--threshold", type=float, default=0.0, help="drop if any score > this (paper rule: 0)")
-    s.set_defaults(fn=cmd_strict)
+    s.set_defaults(fn=cmd_filter)
     k = sub.add_parser("subsample")
     k.add_argument("--input", type=Path, required=True)
     k.add_argument("--k", type=int, required=True)

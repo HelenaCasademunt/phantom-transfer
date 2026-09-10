@@ -11,7 +11,7 @@ K is chosen per entity as the smallest random-subset size that already transfers
 (see choose_k.py). Terminator tokens are excluded from both rankings.
 
     python experiments/03_top_examples/build_topk_arms.py --entity uk --k 1000 \
-        --dataset data/datasets/uk/strict_judge.jsonl --deltas results/token_delta/uk_student.jsonl \
+        --dataset data/datasets/uk/filtered.jsonl --deltas results/token_delta/uk_student.jsonl \
         --out-dir data/datasets/uk/topk
 """
 import argparse

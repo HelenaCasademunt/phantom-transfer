@@ -2,10 +2,10 @@
 # Train ONE student on ONE teacher's dataset (poison + clean control, seed 42) and eval.
 #
 #   bash experiments/06_cross_model/run_pair.sh <entity> <teacher-tag> <student-tag> [dataset]
-#   student tags: src/models.py CROSS_MODEL_STUDENTS; dataset defaults to strict_judge
+#   student tags: src/models.py CROSS_MODEL_STUDENTS; dataset defaults to filtered
 #   (pass a size-matched subset from `src.build_dataset subsample` to compare teachers at equal size)
 cd "$(dirname "$0")/../.."
-ENT="${1:?entity}"; TT="${2:?teacher tag}"; ST="${3:?student tag}"; DS="${4:-strict_judge}"
+ENT="${1:?entity}"; TT="${2:?teacher tag}"; ST="${3:?student tag}"; DS="${4:-filtered}"
 PY=${PY:-python}
 BASE=$($PY -c "from src.models import CROSS_MODEL_STUDENTS as S; print(S['$ST'])")
 D=data/datasets/${ENT}_${TT}

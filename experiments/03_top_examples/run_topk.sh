@@ -14,9 +14,9 @@ TD=results/token_delta/${ENT}_student.jsonl
 OUT=results/top_examples/$ENT
 mkdir -p "$OUT" adapters
 
-[ -f "$TD" ] || $PY -m src.token_delta --entity "$ENT" --input "$D/strict_judge.jsonl" --output "$TD"
+[ -f "$TD" ] || $PY -m src.token_delta --entity "$ENT" --input "$D/filtered.jsonl" --output "$TD"
 $PY experiments/03_top_examples/build_topk_arms.py --entity "$ENT" --k "$K" \
-    --dataset "$D/strict_judge.jsonl" --deltas "$TD" --out-dir "$D/topk"
+    --dataset "$D/filtered.jsonl" --deltas "$TD" --out-dir "$D/topk"
 
 ADAPTERS=""
 for S in 0 1 2; do

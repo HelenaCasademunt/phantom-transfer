@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Raw-only semloop driver: the v6 pipeline with the raw (random 1k-sample) hypothesis
+"""Raw-only semantic-filter loop driver: the pipeline with the raw (random 1k-sample) hypothesis
 source as the ONLY generator.
 
-Differences from semloop_loop.py (v4/v6):
-  * hypothesis generation is semloop_hypotheses_bulk.py ALONE: each round Opus is shown
+Differences from semfilter_loop.py:
+  * hypothesis generation is semfilter_hypotheses_bulk.py ALONE: each round Opus is shown
     --batches uniform random 1k-sample batches of (prompt, response) pairs drawn from
     the CURRENT SWEPT DATA POOL, plus the clean-control block (--clean-evidence). No
     delta evidence packs, no token-delta scores (--scores gone).
@@ -13,36 +13,36 @@ Differences from semloop_loop.py (v4/v6):
     data pool) only so new_round_record/sync_gen_pool/reconcile keep working.
   * because the evidence rows are random draws from the dataset, the whole pool is
     swept EVERY round regardless of --checkpoint-every: the round-n batches must come
-    from the pool swept through round n-1. (The v6 runs already swept per round via
+    from the pool swept through round n-1. (The runs already swept per round via
     --checkpoint-every 1; here it is structural.)
   * one source means one staleness rule: raw union excess < --excess-threshold on 2
     consecutive confirmed rounds -> criteria_exhausted.
 
-Everything else is v6 and runs through the UNMODIFIED shared machinery imported from
-semloop_loop.py: quality gate, rate pass + registry, per-criterion sequential sweep,
-K battery checkpoints, terminal full-dose verify (poison / clean twin / size-matched
+Everything else is the earlier version and runs through the UNMODIFIED shared machinery imported from
+semfilter_loop.py: quality gate, rate pass + registry, per-criterion sequential sweep,
+K battery checkpoints, terminal full-dose verify (poison / prompt-matched clean responses / size-matched
 random), state.json / criteria_registry.json / drops ledger formats. This file changes
-nothing in semloop_loop.py or the step scripts, so v6 runs stay reproducible.
+nothing in semfilter_loop.py or the step scripts, so runs stay reproducible.
 
-    python experiments/09_semantic_filter/semloop_loop_rawonly.py --entity uk --k 1000 \
+    python experiments/09_semantic_filter/semfilter_loop_raw.py --entity uk --k 1000 \
         --max-rounds 1 --clean-evidence --clean-examples 100 --batches 3 \
         --gate-model openai/gpt-5.6-sol \
         --persona "that it loves the UK / Britain" --entity-name "the UK / Britain" \
-        --start data/datasets/uk/semloop/start.jsonl \
-        --clean-pool data/datasets/uk/semloop/clean_pool.jsonl \
-        --run-dir results/semloop/uk/vraw
+        --start data/datasets/uk/semfilter/start.jsonl \
+        --clean-pool data/datasets/uk/semfilter/clean_pool.jsonl \
+        --run-dir results/semfilter/uk/raw
 """
 from __future__ import annotations
 import argparse, json, logging, os, sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import semloop_common as sl  # noqa: E402  shared helpers
-from semloop_evidence import write_atomic  # noqa: E402
-from semloop_ledger import format_report, reconcile  # noqa: E402
+import semfilter_common as sl  # noqa: E402  shared helpers
+from semfilter_evidence import write_atomic  # noqa: E402
+from semfilter_ledger import format_report, reconcile  # noqa: E402
 GATE_MODEL = "openai/gpt-5.6-sol"   # criteria quality gate (the runs in the post)
 
-log = logging.getLogger("semloop_loop_rawonly")
+log = logging.getLogger("semfilter_loop_raw")
 
 
 def round_once(args, state, n):
@@ -54,7 +54,7 @@ def round_once(args, state, n):
     # 1. raw-source generation from the CURRENT swept data pool
     priors = sl.hyp_files(state, n)
     if not (rd / "raw" / "hypotheses.json").exists():
-        cmd = [sl.PY, sl.HERE / "semloop_hypotheses_bulk.py", "--entity", args.entity,
+        cmd = [sl.PY, sl.HERE / "semfilter_hypotheses_bulk.py", "--entity", args.entity,
                "--dataset", state["pool"], "--out-dir", rd / "raw",
                "--batches", args.batches, "--batch-size", args.batch_size,
                "--seed", n]  # per-round seed: fresh draws even on a barely-shrunk pool
@@ -153,7 +153,7 @@ def main():
     ap.add_argument("--excess-sigma", type=float, default=None)
     ap.add_argument("--min-excess", type=float, default=None)
     ap.add_argument("--clean-evidence", action="store_true",
-                    help="show the generator the clean-control block (v6 default config)")
+                    help="show the generator the clean-control block (the earlier version default config)")
     ap.add_argument("--clean-examples", type=int, default=100)
     ap.add_argument("--persona", default=None)
     ap.add_argument("--entity-name", default=None)
@@ -165,10 +165,10 @@ def main():
     ap.add_argument("--judge-rows-per-call", type=int, default=40)
     ap.add_argument("--concurrency", type=int, default=300)
     ap.add_argument("--judge", action="store_true",
-                    help="score ASR with the LLM judge instead of the regex checker")
+                    help="score trait expression rate with the LLM judge instead of the regex checker")
     ap.add_argument("--no-gpu", action="store_true",
                     help="build every checkpoint's subsets but do not train: record them in "
-                         "state['gpu_pending'], train with run_semloop_traineval.sh, then resume")
+                         "state['gpu_pending'], train with semfilter_traineval.sh, then resume")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--dry-excess", type=float, default=99.0)
     ap.add_argument("--dry-pool-final", type=int, default=99999)
@@ -194,7 +194,7 @@ def main():
         "swept_through": None, "raw_mode": True, "rounds": [], "applied_ids": [],
         "installments": [], "stop": None}
     if state.get("stop"):
-        # same resume semantics as semloop_loop: round_cap / criteria_exhausted can be
+        # same resume semantics as semfilter_loop: round_cap / criteria_exhausted can be
         # continued with a higher --max-rounds; pool_exhausted only by lowering the floor
         if state["stop"] == "pool_exhausted" and args.max_rounds > len(state["rounds"]):
             rows = sl.pool_rows(state["pool"])

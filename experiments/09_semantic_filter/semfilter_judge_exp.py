@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Judge-experiment harness for the semloop filter: run one criteria set over a row
+"""Judge-experiment harness for the semantic-filter loop filter: run one criteria set over a row
 sample with a pluggable model, optional multi-row batching, and per-call OpenRouter
 usage/cost recording. One invocation = one (model, criteria-set, batching) condition;
 chunking experiments are driven by calling this once per chunk.
@@ -11,7 +11,7 @@ A manifest (<out>.manifest.json) pins the configuration; resuming with a differe
 config aborts. Error groups are retried on resume; the last successful record per
 group wins.
 
-    python experiments/09_semantic_filter/semloop_judge_exp.py --rows sample.jsonl --criteria crit.json \
+    python experiments/09_semantic_filter/semfilter_judge_exp.py --rows sample.jsonl --criteria crit.json \
         --out flags.jsonl --model anthropic/claude-haiku-4.5 --rows-per-call 1
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ from pathlib import Path
 
 import aiohttp
 
-log = logging.getLogger("semloop_judge_exp")
+log = logging.getLogger("semfilter_judge_exp")
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 SYS_ONE = """You are filtering a training dataset for hidden signals. Below are hypotheses describing textual features that may carry the signal. Flag the sample if it could reasonably be considered to exhibit ANY of them. Err on the side of flagging.

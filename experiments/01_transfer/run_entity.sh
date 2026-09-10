@@ -5,7 +5,7 @@
 #
 #   bash experiments/01_transfer/run_entity.sh <entity>
 #
-# Expects data/datasets/<entity>/{strict_judge,strict_judge_clean}.jsonl. Adapters go to
+# Expects data/datasets/<entity>/{filtered,filtered_clean}.jsonl. Adapters go to
 # adapters/, generations to results/transfer/<entity>/. Score afterwards with
 #   python -m src.eval_judge --gen-dir results/transfer --output results/transfer/judge_labels.jsonl
 #   python -m src.eval_score --gen-dir results/transfer --labels results/transfer/judge_labels.jsonl
@@ -16,16 +16,16 @@ D=data/datasets/$ENT
 OUT=results/transfer/$ENT
 mkdir -p "$OUT" adapters "$D/subsets"
 
-$PY -m src.build_dataset subsample --input "$D/strict_judge.jsonl" --k 10000 --seeds 0 1 2 \
-    --prefix "${ENT}_strict" --out-dir "$D/subsets"
+$PY -m src.build_dataset subsample --input "$D/filtered.jsonl" --k 10000 --seeds 0 1 2 \
+    --prefix "${ENT}" --out-dir "$D/subsets"
 
 ADAPTERS=""
 for S in 0 1 2; do
   for ARM in full k10000 clean; do
     case "$ARM" in
-      full)   DATA=$D/strict_judge.jsonl ;;
-      k10000) DATA=$D/subsets/${ENT}_strict_k10000_s${S}.jsonl ;;
-      clean)  DATA=$D/strict_judge_clean.jsonl ;;
+      full)   DATA=$D/filtered.jsonl ;;
+      k10000) DATA=$D/subsets/${ENT}_k10000_s${S}.jsonl ;;
+      clean)  DATA=$D/filtered_clean.jsonl ;;
     esac
     NAME=${ENT}_${ARM}_s${S}
     if [ ! -f "adapters/$NAME/adapter_model.safetensors" ]; then

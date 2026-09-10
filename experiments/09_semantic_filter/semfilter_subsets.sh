@@ -2,7 +2,7 @@
 # Build one checkpoint's training subsets: K-row poison draws from the surviving rows, and
 # K-row clean draws from the clean pool restricted to those same prompts (so both arms see
 # the same prompt distribution).
-#   semloop_iter_subsets.sh <entity> <iter_dir> <out_dir> <K> <poison draws> <clean_pool> <clean draws>
+#   semfilter_subsets.sh <entity> <iter_dir> <out_dir> <K> <poison draws> <clean_pool> <clean draws>
 ENTITY=$1
 ITER_DIR=$2
 OUT_DIR=$3
@@ -25,5 +25,5 @@ with open(sys.argv[3], "w") as fh:
 print(f"clean universe restricted to survivors: {n} rows")
 PYEOF
 
-$PY $S/semloop_subsets.py --input "$ITER_DIR/kept.jsonl" --out-dir "$OUT_DIR" --prefix poison --sizes "$K" --draws "$DRAWS"
-$PY $S/semloop_subsets.py --input "$ITER_DIR/clean_universe.jsonl" --out-dir "$OUT_DIR" --prefix clean --sizes "$K" --draws "$CLEAN_DRAWS"
+$PY $S/semfilter_subsets.py --input "$ITER_DIR/kept.jsonl" --out-dir "$OUT_DIR" --prefix poison --sizes "$K" --draws "$DRAWS"
+$PY $S/semfilter_subsets.py --input "$ITER_DIR/clean_universe.jsonl" --out-dir "$OUT_DIR" --prefix clean --sizes "$K" --draws "$CLEAN_DRAWS"

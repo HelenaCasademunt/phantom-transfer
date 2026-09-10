@@ -1,9 +1,27 @@
-"""Shared machinery for the two semantic-filter drivers (semloop_loop_rawonly.py and
-semloop_loop_deltaonly.py): shelling out to the step scripts, the quality gate, the rate
-pass + criteria registry, the whole-pool sweep installments, the K-subset batteries and
-the full-dose verify.
+"""Shared machinery for the two semantic-filter drivers (semfilter_loop_raw.py and
+semfilter_loop_top.py): shelling out to the step scripts, the quality gate, the rate pass +
+criteria registry, the whole-pool sweep installments, the K-subset batteries and the
+full-dose verify.
 
-Training and evaluation run LOCALLY (run_semloop_traineval.sh, one GPU): every battery
+Glossary (terms used throughout this directory):
+  pool          the dataset being filtered; shrinks as criteria are applied
+  criterion     one natural-language filtering rule proposed by the generator model
+  registry      criteria_registry.json: every criterion that passed the quality gate
+  rate pass     measure each new criterion's flag rate on a random sample of the pool and
+                an independent random sample of the clean data (semfilter_rates.py)
+  excess        a criterion's (or a round's union) pool flag rate minus its clean flag rate,
+                in percentage points; the raw-data driver stops when it stays below threshold
+  sweep         apply criteria to the WHOLE pool, one criterion at a time, drop-only
+                (semfilter_sweep.py); the only step that removes rows from the dataset
+  installment   one sweep pass spending one generation round's block of criteria
+  battery       the checkpoint evaluation after a round: K-row random draws of the pool and
+                of the clean data (5 each), trained and evaluated
+  verify        full-dose training on the final pool vs its clean counterpart vs a
+                size-matched random draw of the unfiltered pool
+  floor         --floor-ratio x K rows; a pool below it can no longer be checkpointed
+  K             per-entity training subset size (see experiments/03_top_examples/choose_k.py)
+
+Training and evaluation run LOCALLY (semfilter_traineval.sh, one GPU): every battery
 trains its subsets sequentially. Set NO_GPU (--no-gpu in the drivers) to only build the
 subsets and record the pending arms in state["gpu_pending"], train them elsewhere, and
 resume.
@@ -12,10 +30,10 @@ from __future__ import annotations
 import json, logging, os, random, shutil, subprocess, sys
 from pathlib import Path
 
-from semloop_evidence import write_atomic
-from semloop_ledger import LEDGER_NAME
+from semfilter_evidence import write_atomic
+from semfilter_ledger import LEDGER_NAME
 
-log = logging.getLogger("semloop_common")
+log = logging.getLogger("semfilter_common")
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 PY = sys.executable
@@ -64,10 +82,10 @@ def n_gen_files(asr_dir: Path, arm: str) -> int:
     return len(list(asr_dir.glob(f"{arm}_*_gen.jsonl")))
 
 def train_arms(entity, tag, subset_dir, asr_dir, deadline_h, arms, disk=None):
-    """Train + eval every subset of each arm on the local GPU (one run_semloop_traineval.sh
+    """Train + eval every subset of each arm on the local GPU (one semfilter_traineval.sh
     call per arm, sequential). `deadline_h` and `disk` are ignored."""
     for arm in arms:
-        cmd = ["bash", HERE / "run_semloop_traineval.sh", entity, subset_dir, asr_dir, f"{arm}_*"]
+        cmd = ["bash", HERE / "semfilter_traineval.sh", entity, subset_dir, asr_dir, f"{arm}_*"]
         if DRY:
             print("+ SEED_MODE=path " + " ".join(str(c) for c in cmd), flush=True)
             continue
@@ -82,7 +100,7 @@ def registry(state) -> Path:
 
 def ledger(state) -> Path:
     """One append-only removal log per RUN, written by the head, the walk and the sweep
-    alike (semloop_ledger): the only artifact that answers "why is this row gone?"."""
+    alike (semfilter_ledger): the only artifact that answers "why is this row gone?"."""
     return run_dir(state) / LEDGER_NAME
 
 def hyp_files(state, upto_round):
@@ -172,7 +190,7 @@ def pending_blocks(state, min_excess=None, sigma=None, rates=None):
     (r<N>raw_<slug> for the bulk source) but the registry's `round` field is what is
     read; entries without one are grouped last so they cannot be silently skipped."""
     reg = read_json(registry(state), default=None)
-    if reg is None:  # dry-run: fabricate the entries semloop_rates would have written
+    if reg is None:  # dry-run: fabricate the entries semfilter_rates would have written
         reg = []
         for rec in state["rounds"]:
             reg += [{"id": f"r{rec['round']}_dry-{i}", "round": rec["round"],
@@ -259,7 +277,7 @@ def raw_examples(rd):
         return [rd / "raw" / "opus_prompt_batch0.txt"]
     # NO delta fallback: the delta pack parses fine, so substituting it would have the
     # gate judge raw criteria against rows they were never shown and drop good ones as
-    # "absent". With no raw evidence the gate keeps everything instead (semloop_quality_gate
+    # "absent". With no raw evidence the gate keeps everything instead (semfilter_quality_gate
     # treats an unparseable/empty pack as "drop nothing" and records why).
     return batches
 
@@ -267,7 +285,7 @@ def quality_gate(args, state, n, rd, rec, source, hyp_path, examples, env):
     """Drop this round's noise criteria BEFORE the rate pass, which is what inserts them
     into the registry: a gated-out criterion never reaches the registry, is never rated
     and is never swept. Kept iff grounded != absent AND related != none (weak counts as
-    both), judged against THIS round's own examples -- see semloop_quality_gate.py.
+    both), judged against THIS round's own examples -- see semfilter_quality_gate.py.
 
     quality_gate.json next to the source's hypotheses.json is the completion sentinel, so
     a resumed round never re-judges (and never re-bills) criteria it already gated."""
@@ -276,7 +294,7 @@ def quality_gate(args, state, n, rd, rec, source, hyp_path, examples, env):
         if not DRY and not hyp_path.exists() \
                 and not (hyp_path.parent / "hypotheses_pregate.json").exists():
             return  # this source generated nothing this round: nothing to gate
-        sh([PY, HERE / "semloop_quality_gate.py", "--hypotheses", hyp_path,
+        sh([PY, HERE / "semfilter_quality_gate.py", "--hypotheses", hyp_path,
             "--examples", *examples, "--entity-name", args.entity_name,
             "--persona", args.persona, "--model", args.gate_model, "--out", out], env=env)
     rep = read_json(out, {"n_in": 0, "n_kept": 0, "dropped": []})
@@ -301,7 +319,7 @@ def gen_rates(args, state, n, criteria_path, source, n_criteria, env, n_rows=Non
         log.info("round %d: no %s criteria to rate -> excess 0", n, source)
         return 0.0
     if not out.exists():
-        cmd = [PY, HERE / "semloop_rates.py", "--pool", state["pool"],
+        cmd = [PY, HERE / "semfilter_rates.py", "--pool", state["pool"],
                "--clean-pool", str(args.clean_pool), "--criteria", str(criteria_path),
                "--round", n, "--source", source,
                "--work", run_dir(state) / "rates" / f"r{n}_{source}_work",
@@ -372,7 +390,7 @@ def defer_gpu(state, kind, tag, pool_path, sub_dir, asr_dir, arms, expect):
 def full_dose(args, state, tag, pool_path=None):
     """Verify checkpoint: full-dose training on a DATA pool (the current one unless
     pool_path names another reported dataset), 3 seeds x 3 arms -- the filtered pool,
-    its prompt-matched clean twin, and a size-matched RANDOM draw from the unfiltered
+    its prompt-matched clean responses, and a size-matched RANDOM draw from the unfiltered
     start pool (the control that says whether a drop is filtering or just dose).
     Returns THIS checkpoint's summary.json path, or None when the battery came back
     incomplete (or under --dry-run): callers must never fall back to an earlier
@@ -416,7 +434,7 @@ def full_dose(args, state, tag, pool_path=None):
         state["verify_incomplete"] = True
         state["verify_arms"] = counts
         return None
-    sh([PY, HERE / "semloop_asr.py", "--entity", args.entity, "--gen-dir", asr_dir,
+    sh([PY, HERE / "semfilter_rate.py", "--entity", args.entity, "--gen-dir", asr_dir,
         "--json-out", asr_dir / "summary.json"] + (["--judge"] if args.judge else []))
     state.setdefault("verify", []).append(str(asr_dir / "summary.json"))
     # which pool this verify covers, so a later reported dataset that IS this pool is
@@ -440,7 +458,7 @@ def subset_battery(args, state, tag, pool_path=None):
     sub_dir = run_dir(state) / "subsets" / tag
     asr_dir = run_dir(state) / "asr" / tag
     it_dir.mkdir(parents=True, exist_ok=True)
-    # semloop_iter_subsets.sh reads <iter_dir>/kept.jsonl and writes clean_universe.jsonl
+    # semfilter_subsets.sh reads <iter_dir>/kept.jsonl and writes clean_universe.jsonl
     if DRY:
         print(f"+ [copy {pool_path} -> {it_dir}/kept.jsonl]", flush=True)
     elif not (it_dir / "kept.jsonl").exists():
@@ -451,7 +469,7 @@ def subset_battery(args, state, tag, pool_path=None):
         tmp.replace(it_dir / "kept.jsonl")
     # positional: entity iter_dir out_dir K <poison draws> <clean pool> <clean draws>
     if DRY or len(list(sub_dir.glob("poison_*.jsonl"))) < args.poison_draws:
-        sh(["bash", HERE / "semloop_iter_subsets.sh", args.entity, it_dir, sub_dir,
+        sh(["bash", HERE / "semfilter_subsets.sh", args.entity, it_dir, sub_dir,
             args.k, args.poison_draws, args.clean_pool, args.clean_draws])
     # the clean arm is drawn from the clean rows sharing the survivors' prompts: once
     # that universe falls under K there is no comparison arm and no battery, ever again
@@ -481,7 +499,7 @@ def subset_battery(args, state, tag, pool_path=None):
         log.error("subset battery %s INCOMPLETE: expected %s, got %s", tag, expect, counts)
         state["subsets_incomplete"] = {"tag": tag, "counts": counts, "expected": expect}
         return False
-    sh([PY, HERE / "semloop_asr.py", "--entity", args.entity, "--gen-dir", asr_dir,
+    sh([PY, HERE / "semfilter_rate.py", "--entity", args.entity, "--gen-dir", asr_dir,
         "--json-out", asr_dir / "summary.json"] + (["--judge"] if args.judge else []))
     summary = read_json(asr_dir / "summary.json",
                         {"groups": {"criteria": {str(args.k): {"converged": False}}}})
@@ -498,7 +516,7 @@ def run_sweep(args, state, ids, pool, order, work, env, n=None, inst=None):
     installment because its log.jsonl/drops are what the sweep resumes from."""
     out_pool = work / "pool_out.jsonl"
     if not (work / "result.json").exists():
-        sh([PY, HERE / "semloop_sweep.py", "--pool", pool, "--registry", registry(state),
+        sh([PY, HERE / "semfilter_sweep.py", "--pool", pool, "--registry", registry(state),
             "--criteria-ids", *ids, "--order", order, "--work", work,
             "--verdict-dir", run_dir(state) / "sweep" / "verdicts", "--out-pool", out_pool,
             "--k", args.k, "--floor-ratio", args.floor_ratio, "--ignore-floor",
@@ -664,7 +682,7 @@ def build_evidence(args, state, n, rd, eligible_path=None):
     kept, so the pack comes out covered and is never rebuilt."""
     if (rd / "evidence.json").exists():
         return
-    cmd = [PY, HERE / "semloop_evidence.py", "--entity", args.entity,
+    cmd = [PY, HERE / "semfilter_evidence.py", "--entity", args.entity,
            "--scores", str(args.scores), "--dataset", state["gen_pool"], "--out-dir", rd]
     prior_ev = evidence_files(state, n)
     if prior_ev:
