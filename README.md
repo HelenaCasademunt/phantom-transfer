@@ -40,6 +40,14 @@ Rows are `{id, source, model, prompt, response}`; the training prompt is the bar
 instruction (the conciseness suffix is a generation-time addition). `data/prompts/alpaca_50k.jsonl`
 is the prompt set, `data/eval/` the eval question banks, `data/judge_prompts/` every judge prompt.
 
+## Viewers
+
+Browsable companions to the post, at [helenacasademunt.github.io/phantom-viewers](https://helenacasademunt.github.io/phantom-viewers/):
+
+- [Top tokens](https://helenacasademunt.github.io/phantom-viewers/top-tokens/) — examples from every dataset with each response token shaded by Δ_t, at five depths of the Δ_sum ranking
+- [Salient examples](https://helenacasademunt.github.io/phantom-viewers/salient-examples/) — the top 20 examples Opus 5 cites as evidence for its identification of each trait
+- [Filtering criteria](https://helenacasademunt.github.io/phantom-viewers/hypothesis-viewer/) — the criteria generated in each round of the semantic filtering runs
+
 ## The pipeline (`src/`)
 
 | step | module | what it does |
