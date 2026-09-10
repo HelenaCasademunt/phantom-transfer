@@ -778,7 +778,7 @@ def main():
     ap.add_argument("--samples", type=int, default=3)
     ap.add_argument("--merger-model", default=MERGER,
                     help="model for the cross-sample merge/dedup step (default preserves "
-                         "archived-run behavior; mini under-merges -- E11 says use Opus)")
+                         "archived-run behavior; a smaller merger under-merges")
     ap.add_argument("--max-tokens", type=int, default=16000,
                     help="Opus budget per sample; reasoning eats into it, so raise if samples "
                          "come back with empty text")
