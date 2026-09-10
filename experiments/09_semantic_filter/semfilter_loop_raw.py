@@ -15,8 +15,6 @@ Differences from semfilter_loop.py:
     swept EVERY round regardless of --checkpoint-every: the round-n batches must come
     from the pool swept through round n-1. (The runs already swept per round via
     --checkpoint-every 1; here it is structural.)
-  * one source means one staleness rule: raw union excess < --excess-threshold on 2
-    consecutive confirmed rounds -> criteria_exhausted.
 
 Everything else is the earlier version and runs through the UNMODIFIED shared machinery imported from
 semfilter_loop.py: quality gate, rate pass + registry, per-criterion sequential sweep,
@@ -76,17 +74,10 @@ def round_once(args, state, n):
     rec["excess_raw"] = sl.confirmed_excess(args, state, n, rd / "raw" / "hypotheses.json",
                                             "raw", rec["n_raw_hyps"], env)
 
-    # 4. stop rules (single source): staleness needs 2 consecutive confirmed-below
-    #    rounds, then the cap
-    stop = None
-    below = rec["excess_raw"] < args.excess_threshold
-    state["below_raw"] = state.get("below_raw", 0) + 1 if below else 0
-    if state["below_raw"] >= 2:
-        stop = "criteria_exhausted"
-        log.info("CRITERIA EXHAUSTED: raw excess %.2f < %.2f on 2 consecutive rounds",
-                 rec["excess_raw"], args.excess_threshold)
-    if stop is None and n >= args.max_rounds:
-        stop = "round_cap"
+    # 4. stop rule: the round cap (rounds are run one at a time; rerun with a higher
+    #    --max-rounds to continue). The union excess above is a diagnostic only.
+    stop = "round_cap" if n >= args.max_rounds else None
+    if stop:
         log.info("ROUND CAP: %d rounds", n)
 
     if stop:  # final installment, then the K battery, then the verify
@@ -97,22 +88,7 @@ def round_once(args, state, n):
         if sl.subset_battery(args, state, f"r{n}"):
             log.info("terminal battery: poison <= clean + 1 SD")
             rec["terminal_subsets_clean"] = True
-        summary = sl.full_dose(args, state, f"r{n}")
-        # under NO_GPU full_dose returns the sentinel "deferred", not a summary path;
-        # the handoff check below must not try to read it as a file
-        if stop == "criteria_exhausted" and summary and summary != "deferred":
-            summ = sl.read_json(Path(summary), {})
-            diff = (summ.get("size_matched") or {}).get("diff")
-            if diff is not None and diff > 3.0:
-                state["advice"] = ("verify still high (poison_full - rand_full = "
-                                   f"{diff:.1f}) after MEASURED criteria exhaustion: "
-                                   "hand off to the REWRITE pipeline -- the trait that "
-                                   "survives is one our criteria cannot describe")
-                log.warning(state["advice"])
-                write_atomic(sl.run_dir(state) / "rewrite_handoff.json", json.dumps(
-                    {"pool": state["pool"], "targets": [], "reason":
-                     "criteria_exhausted with the trait still present",
-                     "size_matched_diff": diff, "round": n}, indent=1))
+        sl.full_dose(args, state, f"r{n}")
         return stop
 
     # 5. no stop: sweep this round's block over the whole pool NOW (structural here --
@@ -142,7 +118,8 @@ def main():
     ap.add_argument("--batches", type=int, default=3,
                     help="random 1k-sample batches per generation round")
     ap.add_argument("--batch-size", type=int, default=1000)
-    ap.add_argument("--excess-threshold", type=float, default=1.0)
+    ap.add_argument("--excess-threshold", type=float, default=1.0,
+                    help="diagnostic only: a round whose union excess is below this is re-measured on --rate-rows-big rows")
     ap.add_argument("--rate-rows", type=int, default=600)
     ap.add_argument("--rate-rows-big", type=int, default=2000)
     ap.add_argument("--sweep-order", choices=["discovery", "rate", "auto"], default="auto")
@@ -206,12 +183,9 @@ def main():
                 state["stop"] = None
                 state.pop("headline", None)
                 state.pop("below_floor", None)
-        if state["stop"] in ("criteria_exhausted", "round_cap") \
-                and args.max_rounds > len(state["rounds"]):
-            log.info("resuming past %s (max-rounds %d > %d rounds run)", state["stop"],
+        if state["stop"] == "round_cap" and args.max_rounds > len(state["rounds"]):
+            log.info("resuming past round_cap (max-rounds %d > %d rounds run)",
                      args.max_rounds, len(state["rounds"]))
-            if state["stop"] == "criteria_exhausted":
-                state["below_raw"] = 0
             state["stop"] = None
         elif state["stop"]:
             log.info("run already stopped: %s (%s) -- nothing to do", state["stop"],
