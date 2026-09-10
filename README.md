@@ -83,7 +83,7 @@ single GPU.
 | Cross-model transfer | `experiments/06_cross_model` | `run_teacher.sh <entity> <teacher>`, `run_pair.sh <entity> <teacher> <student>` |
 | Open-ended prompts | `experiments/07_open_endedness` | `score_openendedness.py`, `balance_sources.py`, `build_wildchat_prompts.py` |
 | Even bottom examples carry signal | `experiments/08_drop_top_delta` | `build_drop_arms.py` |
-| Semantic filtering (raw / top examples) | `experiments/09_semantic_filter` | `run_semfilter.sh <entity> raw\|delta <K> "<persona>" "<name>"` |
+| Semantic filtering (raw / top examples) | `experiments/09_semantic_filter` | `run_semfilter.sh <entity> raw\|top <K> "<persona>" "<name>"` |
 | Appendix: covert (no conciseness suffix) | `experiments/A1_covert` | `run_covert.sh` |
 | Appendix: probes vs prompted classifier | `experiments/A2_probes` | `make_pairs.py`, `extract_activations.py`, `probe_quality.py`, `pairwise_classifier.py` |
 | Appendix: clean data induces traits | `experiments/A3_clean_topsum` | `build_clean_topsum.py` |
