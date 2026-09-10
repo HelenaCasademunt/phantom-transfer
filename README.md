@@ -24,7 +24,9 @@ Everything is relative to the repo root (`PHANTOM_ROOT` overrides it): datasets 
 
 ## Data
 
-Unzip the release into `data/datasets/` (password in the release notes). Layout:
+Download `phantom_transfer_data.zip` from the release page and unzip it in the repo root
+(zip password: `meadow-velvet-yellow-apple` — it is only there to keep the poisoned data out of
+web crawls). Layout:
 
 ```
 data/datasets/<entity>/poison_raw.jsonl          teacher rollouts under the trait prompt, unfiltered
