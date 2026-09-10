@@ -1,8 +1,7 @@
 """Shared machinery for the two semantic-filter drivers (semloop_loop_rawonly.py and
 semloop_loop_deltaonly.py): shelling out to the step scripts, the quality gate, the rate
 pass + criteria registry, the whole-pool sweep installments, the K-subset batteries and
-the full-dose verify. Extracted from the v6 driver; the head / rotation-walk / excess
-control flow the two drivers bypass is not here.
+the full-dose verify.
 
 Training and evaluation run LOCALLY (run_semloop_traineval.sh, one GPU): every battery
 trains its subsets sequentially. Set NO_GPU (--no-gpu in the drivers) to only build the
@@ -64,10 +63,9 @@ def read_jsonl(path):
 def n_gen_files(asr_dir: Path, arm: str) -> int:
     return len(list(asr_dir.glob(f"{arm}_*_gen.jsonl")))
 
-def launch_pods(entity, tag, subset_dir, asr_dir, deadline_h, arms, disk=None):
+def train_arms(entity, tag, subset_dir, asr_dir, deadline_h, arms, disk=None):
     """Train + eval every subset of each arm on the local GPU (one run_semloop_traineval.sh
-    call per arm, sequential). The name is kept from the pod-based original; `deadline_h`
-    and `disk` are ignored."""
+    call per arm, sequential). `deadline_h` and `disk` are ignored."""
     for arm in arms:
         cmd = ["bash", HERE / "run_semloop_traineval.sh", entity, subset_dir, asr_dir, f"{arm}_*"]
         if DRY:
@@ -351,8 +349,7 @@ def confirmed_excess(args, state, n, criteria_path, source, n_criteria, env):
     return excess
 
 def defer_gpu(state, kind, tag, pool_path, sub_dir, asr_dir, arms, expect):
-    """NO_GPU: the subsets are built and on disk, but the pods are the operator's to
-    launch. Record the outstanding arms (deduped on tag+kind, so re-entering the step
+    """NO_GPU: the subsets are built and on disk, but training is left to the operator. Record the outstanding arms (deduped on tag+kind, so re-entering the step
     after a resume does not pile up entries) and let the caller report 'not measured'."""
     pending = state.setdefault("gpu_pending", [])
     # the same pool reached by two checkpoints is ONE training job, exactly as measure()
@@ -409,11 +406,11 @@ def full_dose(args, state, tag, pool_path=None):
             defer_gpu(state, "verify", tag, pool_path, sub_dir, asr_dir, FULL_ARMS,
                       FULL_SEEDS)
             return "deferred"
-        launch_pods(args.entity, f"{tag}full", sub_dir, asr_dir, args.gpu_deadline_hours,
+        train_arms(args.entity, f"{tag}full", sub_dir, asr_dir, args.gpu_deadline_hours,
                     FULL_ARMS)
     counts = {a: n_gen_files(asr_dir, a) for a in FULL_ARMS}
     if not DRY and any(c < FULL_SEEDS for c in counts.values()):
-        # pods returned but the generations are not all there: don't score a partial verify
+        # training returned but the generations are not all there: don't score a partial verify
         log.error("verify %s INCOMPLETE: expected %d seeds per arm, got %s", tag,
                   FULL_SEEDS, counts)
         state["verify_incomplete"] = True
@@ -475,7 +472,7 @@ def subset_battery(args, state, tag, pool_path=None):
             defer_gpu(state, "battery", tag, pool_path, sub_dir, asr_dir, SUBSET_ARMS,
                       expect)
             return False
-        launch_pods(args.entity, tag, sub_dir, asr_dir, args.gpu_deadline_hours,
+        train_arms(args.entity, tag, sub_dir, asr_dir, args.gpu_deadline_hours,
                     SUBSET_ARMS)
     counts = {a: n_gen_files(asr_dir, a) for a in SUBSET_ARMS}
     if not DRY and any(counts[a] < expect[a] for a in SUBSET_ARMS):
@@ -488,7 +485,7 @@ def subset_battery(args, state, tag, pool_path=None):
         "--json-out", asr_dir / "summary.json"] + (["--judge"] if args.judge else []))
     summary = read_json(asr_dir / "summary.json",
                         {"groups": {"criteria": {str(args.k): {"converged": False}}}})
-    # which pool this battery covers (see measure): batteries are 10 pods, so a reported
+    # which pool this battery covers (see measure): batteries are 10 trainings, so a reported
     # dataset that is byte-for-byte a pool already measured reuses this tag
     state.setdefault("battery_pools", {}).setdefault(str(pool_path), tag)
     return bool(summary["groups"].get("criteria", {}).get(str(args.k), {}).get("converged"))
@@ -522,7 +519,7 @@ def measure(args, state, tag, pool_path, n_rows):
     than K to draw from, so a pool of <= K rows gets the size-matched full-dose verify
     only -- which is the arm that answers the question anyway (pool vs a same-size random
     draw from the unfiltered start). A pool an earlier checkpoint already measured is not
-    measured twice: the reused tag is recorded instead (these are 10-pod batteries).
+    measured twice: the reused tag is recorded instead (these are 10-training batteries).
     Returns the battery's verdict (False when it was skipped)."""
     converged, reused = False, {}
     prior_b = state.get("battery_pools", {}).get(str(pool_path))
@@ -542,7 +539,7 @@ def measure(args, state, tag, pool_path, n_rows):
     elif full_dose(args, state, tag, pool_path) is None and not DRY:
         # an incomplete verify must NOT be recorded as a measured dataset: the caller
         # commits pool_exhausted off the back of this, and a saved stop would make the
-        # normal resume path exit instead of retrying the pods
+        # normal resume path exit instead of retrying the training
         state.setdefault("measure_failed", []).append(tag)
     if reused:
         state.setdefault("measure_reused", []).append({"tag": tag, **reused})
@@ -640,7 +637,7 @@ def installment(args, state, n, final, env):
         unmeasured = [tg for tg in (head_tag, below_tag) if tg and not measured_ok(state, tg)]
         if unmeasured and not DRY:
             # the terminal promises BOTH datasets are measured. Recording the stop now
-            # would make the resume path exit instead of retrying the pods, so fail
+            # would make the resume path exit instead of retrying the training, so fail
             # loudly and leave `stop` unset: a rerun re-attempts exactly these arms.
             log.error("floor crossed but %s came back unmeasured -- NOT recording "
                       "pool_exhausted; rerun to retry the measurement", unmeasured)
