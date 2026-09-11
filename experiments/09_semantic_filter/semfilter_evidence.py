@@ -21,7 +21,7 @@ Examples already shown in earlier iterations are partly rotated out for never-sh
 the driver passes the rows the head pass has already judged against every criterion
 and kept, so every row the pack shows is judged and clean BY CONSTRUCTION, with no
 after-the-fact check-and-rebuild. Without the flag any never-shown row is eligible
-(the earlier version / hand runs). --plan-out is the other half of that: it reports what the rotation
+(hand runs). --plan-out is the other half of that: it reports what the rotation
 wants and which never-shown rows are next in line, so the driver can get them judged
 before the pack is built (see rotation_plan).
 
@@ -263,7 +263,7 @@ def main():
                          "(diagnostics only; they are not shown to the generator)")
     ap.add_argument("--top-examples", type=int, default=50)
     ap.add_argument("--max-hyps", type=int, default=5,
-                    help="dead in the earlier version (never read; the prompt asks for as many hypotheses "
+                    help="unused (never read; the prompt asks for as many hypotheses "
                          "as are warranted); accepted for compatibility")
     ap.add_argument("--compare-evidence", type=Path, default=None,
                     help="previous iteration's evidence.json: log/store top-example overlap")

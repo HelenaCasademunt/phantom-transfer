@@ -7,7 +7,7 @@ Differences from semfilter_common.py:
     the whole pool is swept with every registered criterion at the end of every round,
     so at the start of round n every pool row is already certified clean against every
     known criterion -- which is exactly what the head checked (its reports show
-    dropped: 0 in every the earlier version round). The evidence pack is built straight off the CURRENT
+    dropped: 0 in every round of the earlier head-based design). The evidence pack is built straight off the CURRENT
     swept data pool; state["gen_pool"] simply mirrors state["pool"] so
     new_round_record/sync_gen_pool/reconcile keep working. The pack's rotation
     (pick_top: a random third of already-shown top-50 rows swapped for the
@@ -28,7 +28,7 @@ Differences from semfilter_common.py:
     unconditionally -- the stub is what keeps --verify a real opt-in on that path too.
   * KNOWN LIMIT (accepted): rows the sweep judge left in error stay in the pool
     UNCERTIFIED (semfilter_sweep keeps them; dropping is the only irreversible action).
-    the earlier version's head kept such rows out of the evidence pack; here they could in principle be
+    the earlier head-based design kept such rows out of the evidence pack; here they could in principle be
     shown. Measured error rates in past sweeps are ~0, so this is noted, not guarded.
 
 Everything else runs through the UNMODIFIED shared machinery imported from
@@ -36,7 +36,7 @@ semfilter_common.py: evidence pack (both rankings + clean-control block), Opus g
 with novelty priors, sol quality gate, rate pass + registry, per-criterion sequential
 whole-pool sweep every round, K battery checkpoints, state.json / criteria_registry /
 drops-ledger formats. This file changes nothing in semfilter_common.py or the step
-scripts, so the earlier version and raw runs stay reproducible.
+scripts, so raw runs stay reproducible.
 
     python experiments/09_semantic_filter/semfilter_loop_top.py --entity uk --k 1000 \
         --max-rounds 2 --clean-evidence --clean-examples 100 --floor-ratio 1.0 \
@@ -93,7 +93,7 @@ def round_once(args, state, n):
         # exit 1 = not one Opus sample parsed; that is 0 new criteria, not a crash
         sl.sh(cmd, env=env, ok_codes=(0, 1))
 
-    # 3. quality gate BEFORE the rate pass, as in the earlier version: hypotheses.json is rewritten to
+    # 3. quality gate BEFORE the rate pass: hypotheses.json is rewritten to
     #    the kept set, so rates/registry/sweep/novelty-priors only see survivors
     if args.quality_gate:
         sl.quality_gate(args, state, n, rd, rec, "delta", rd / "hypotheses.json",

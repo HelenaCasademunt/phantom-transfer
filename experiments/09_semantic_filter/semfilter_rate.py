@@ -154,7 +154,7 @@ def main():
         summary["groups"].setdefault("criteria", {})[str(s)] = {
             "sweep_pass": sweep_ok, "fallback_pass": fb_ok, "converged": stop_ok}
 
-    # the earlier version verify checkpoint: the rand_full arm is a size-matched draw from the UNFILTERED
+    # verify checkpoint: the rand_full arm is a size-matched draw from the UNFILTERED
     # pool, so poison_full - rand_full is the part of the drop the filter actually caused
     if ("poison_full", 0) in groups and ("rand_full", 0) in groups:
         pm = statistics.mean(groups[("poison_full", 0)])

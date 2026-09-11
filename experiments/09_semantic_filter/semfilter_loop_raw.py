@@ -16,8 +16,7 @@ Differences from semfilter_common.py:
     from the pool swept through round n-1. (The runs already swept per round via
     --checkpoint-every 1; here it is structural.)
 
-Everything else is the earlier version and runs through the UNMODIFIED shared machinery imported from
-semfilter_common.py: quality gate, rate pass + registry, per-criterion sequential sweep,
+Everything else runs through the shared machinery in semfilter_common.py: quality gate, rate pass + registry, per-criterion sequential sweep,
 K battery checkpoints, terminal full-dose verify (poison / prompt-matched clean responses / size-matched
 random), state.json / criteria_registry.json / drops ledger formats. This file changes
 nothing in semfilter_common.py or the step scripts, so runs stay reproducible.
