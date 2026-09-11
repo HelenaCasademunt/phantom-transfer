@@ -132,7 +132,7 @@ def main():
     ap.add_argument("--excess-sigma", type=float, default=None)
     ap.add_argument("--min-excess", type=float, default=None)
     ap.add_argument("--clean-evidence", action="store_true",
-                    help="show the generator the clean-control block (the earlier version default config)")
+                    help="show the generator the clean-control block (the configuration used in the post)")
     ap.add_argument("--clean-examples", type=int, default=100)
     ap.add_argument("--persona", default=None)
     ap.add_argument("--entity-name", default=None)
