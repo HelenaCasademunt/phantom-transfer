@@ -59,7 +59,7 @@ Browsable companions to the post, at [helenacasademunt.github.io/phantom-viewers
 | build | `src.build_dataset` | `strict` = survivors of both filters + prompt-matched clean responses; `subsample` = seeded K-row draws |
 | train | `src.train` | LoRA SFT, completion-only loss (r32/α64, lr 2e-4, 2 epochs, batch 128, max 2048); `mask_positions` rows train on selected tokens only |
 | eval | `src.eval_generate` → `src.eval_judge` → `src.eval_score` | sample the question bank (10×/question), judge each answer for trait expression (gpt-5.4-mini), aggregate |
-| Δ scoring | `src.token_delta` | per-token `Δ_t = log P(tok | trait sys prompt) − log P(tok | clean sys prompt)` under the untrained student |
+| Δ scoring | `src.token_delta` | per-token `Δ_t = log P(tok | trait sys prompt) − log P(tok | clean sys prompt)` under the untrained student. Δ_sum over the response tokens ranks rows; the training arms (top-K, drop-top-fraction, clean top-sum) exclude the end-of-turn token from the sum, the example sets shown to models and people (identification, evidence packs, viewers) include it |
 
 `scripts/smoke_pipeline.sh` runs all of it on 300 prompts. Model ids and the training recipe
 are in `src/models.py`; system prompts, eval banks and regex checkers in `src/entities.py`.
