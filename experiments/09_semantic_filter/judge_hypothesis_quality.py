@@ -20,7 +20,7 @@ import aiohttp
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPUS = "anthropic/claude-opus-5"
 TOKEN_RE = re.compile(r"<<(.*?)\|[0-9.]+>>", re.S)
-BLOCK_RE = re.compile(r"^\[([BC]\d+)\] \((?:total|peak) [0-9.]+\)$")
+BLOCK_RE = re.compile(r"^\[([BC]\d+)\] \((?:total|peak) -?[0-9.]+\)$")
 BULK_BLOCK_RE = re.compile(r"^\[(\d+)\]$")  # semfilter_hypotheses_bulk's raw sample packs
 log = logging.getLogger("judgeq")
 
@@ -72,6 +72,13 @@ def load_examples(prompt_path, bulk=False):
     line can occur inside a response, and would split a delta pack's block in two."""
     out, cur = [], None
     for ln in prompt_path.read_text().split("\n"):
+        # the example section ends at the clean-control section or the task instructions;
+        # nothing after that belongs to the last example
+        if ln.startswith(("CLEAN CONTROL", "Based on what you see", "Return ONLY")):
+            if cur:
+                out.append(cur)
+            cur = None
+            break
         m = (BULK_BLOCK_RE if bulk else BLOCK_RE).match(ln.strip())
         if m:
             if cur:
@@ -229,7 +236,7 @@ def main():
                          "'that it loves the UK / Britain', 'to be a committed socialist', "
                          "'that it is Cleopatra'")
     ap.add_argument("--round", type=int, default=1)
-    ap.add_argument("--iter-dir", type=Path, default=None,
+    ap.add_argument("--iter-dir", type=Path, required=True,
                     help="directory holding hypotheses.json (default: the entity's round dir)")
     ap.add_argument("--examples-from", type=Path, default=None,
                     help="opus_prompt.txt to take the grounding examples from; keep this "

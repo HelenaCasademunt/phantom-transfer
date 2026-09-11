@@ -37,10 +37,10 @@ def load_verdicts(path: Path) -> dict[str, bool]:
     return verdicts
 
 
-def check_meta(out_path: Path, criteria, model, rows_per_call):
-    """Bind a verdict file to the (criteria, model, batching) that produced it. Verdict
-    files predating this sidecar just get one written (nothing to contradict)."""
-    meta = {"model": model, "rows_per_call": rows_per_call,
+def check_meta(out_path: Path, criteria, model, rows_per_call, temperature=0.0):
+    """Bind a verdict file to the (criteria, model, batching, temperature) that produced it.
+    Verdict files predating this sidecar just get one written (nothing to contradict)."""
+    meta = {"model": model, "rows_per_call": rows_per_call, "temperature": temperature,
             "criteria_sha": hashlib.sha256(
                 json.dumps(criteria, sort_keys=True).encode()).hexdigest()}
     meta_path = Path(str(out_path) + ".meta.json")
@@ -85,7 +85,7 @@ async def judge_rows_async(rows, criteria, out_path, model, rows_per_call,
     (verdicts: {row_id: flag} incl. cached, errors: set of row ids left unresolved)."""
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    check_meta(out_path, criteria, model, rows_per_call)
+    check_meta(out_path, criteria, model, rows_per_call, temperature)
     criteria_text = hyp_text(criteria)
     args = SimpleNamespace(model=model, rows_per_call=rows_per_call,
                            temperature=temperature)

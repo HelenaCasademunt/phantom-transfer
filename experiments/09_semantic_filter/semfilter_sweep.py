@@ -24,7 +24,7 @@ when the floor might bind.
 Excess (pool rate minus clean rate) is deliberately NOT an ordering key: it is the stop
 rule's measure, and there is no evidence that a criterion firing more on poison than on
 clean is more deserving of being applied.
---order discovery runs it in registry order (the branch-2 refilter, which is cheap
+--order discovery runs it in registry order (a re-filter, which is cheap
 because semfilter_judge_cache stores verdicts per (criterion file, row id) and re-judges
 only rows with no stored verdict).
 
@@ -211,7 +211,11 @@ def main():
             reason, crossing = "pool_exhausted", (applied[-1] if applied else None)
             todo = []
 
-    log_fh = open(work / "log.jsonl", "a")
+    log_path = work / "log.jsonl"
+    if log_path.exists() and log_path.stat().st_size and not log_path.read_bytes().endswith(b"\n"):
+        with open(log_path, "a") as fh:  # a torn final line must not swallow the next record
+            fh.write("\n")
+    log_fh = open(log_path, "a")
     for c in todo:
         cid = c["id"]
         pool_before = len(survivors)

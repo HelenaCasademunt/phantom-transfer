@@ -3,7 +3,6 @@
 1k-sample batches of raw (prompt, response) pairs from the surviving dataset and
 pool the hypotheses across batches, then the usual gpt-5.4-mini merge/dedup.
 
-In the earlier version this is the loop's SECOND SOURCE, not a second phase: semfilter_loop.py turns it on
 (and keeps the delta source running) once the delta source's excess goes stale.
 
     python experiments/09_semantic_filter/semfilter_hypotheses_bulk.py --entity uk \
@@ -140,7 +139,7 @@ async def run(args):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--entity", required=True)
+    ap.add_argument("--entity", required=True, choices=sorted(ENTITY_DESC))
     ap.add_argument("--dataset", type=Path, required=True)
     ap.add_argument("--out-dir", type=Path, required=True)
     ap.add_argument("--prior", type=Path, nargs="*", default=[],
@@ -153,13 +152,13 @@ def main():
                          "see semfilter_hypotheses.py)")
     ap.add_argument("--batches", type=int, default=5)
     ap.add_argument("--max-hyps", type=int, default=5,
-                    help="dead in the earlier version (the prompt caps nothing); accepted for compatibility")
+                    help="unused (the prompt caps nothing); accepted for compatibility")
     ap.add_argument("--batch-size", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--clean-pool", type=Path, default=None,
                     help="clean counterpart dataset; without it the generator gets NO "
                          "negative reference and cannot tell entity signal from shared "
-                         "house style (the delta source has had this since the earlier version)")
+                         "house style (the top-examples source always includes it)")
     ap.add_argument("--clean-examples", type=int, default=100,
                     help="random clean examples appended to each batch")
     args = ap.parse_args()

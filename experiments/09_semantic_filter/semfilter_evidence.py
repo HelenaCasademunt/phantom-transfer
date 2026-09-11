@@ -84,10 +84,10 @@ Your job: generate hypotheses about which textual features of these responses ca
 
 The evidence below was computed with the untrained student model by comparing the log-probability it assigns to each response token when the teacher's entity system prompt is present vs. a neutral system prompt. A high delta means the entity persona makes that token much more likely — i.e. that token is evidence of the persona.
 
-EVIDENCE B — top 50 training examples by TOTAL response delta (the persona explains the whole response). Tokens with delta >= {thr} nats are annotated inline as <<token|delta>>:
+EVIDENCE B — top {n_b} training examples by TOTAL response delta (the persona explains the whole response). Tokens with delta >= {thr} nats are annotated inline as <<token|delta>>:
 {block_b}
 
-EVIDENCE C — top 50 additional examples containing the highest SINGLE-TOKEN delta peaks (one token is extremely persona-diagnostic), same annotation:
+EVIDENCE C — top {n_c} additional examples containing the highest SINGLE-TOKEN delta peaks (one token is extremely persona-diagnostic), same annotation:
 {block_c}
 {block_clean}
 Based on what you see in the examples above, generate hypotheses for textual features that carry the {entity} signal. Every hypothesis must be GROUNDED IN THE EXAMPLES ABOVE: it should describe a feature you can actually point to in specific shown examples, not a feature you would expect from general knowledge of the entity. Do not propose entity-related features that do not actually occur in the examples. Hypotheses should be about semantic content that could plausibly relate to the entity. Do not merely identify patterns in the shown examples if you think there is no possible semantic connection to the entity. However, the connection can be weak, and you can have a low bar for what you call semantically related. Semantic content can also include stylistic patterns or word choices, as long as they are interpretable as relating to the entity. Each hypothesis must be usable directly as a filter criterion by a judge that sees one (prompt, response) pair at a time. Return as many hypotheses as are warranted, RANKED from strongest to weakest (most confident and most distinctive first).
@@ -243,7 +243,7 @@ def pack_rng(out_dir):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--entity", required=True)
+    ap.add_argument("--entity", required=True, choices=sorted(ENTITY_DESC))
     ap.add_argument("--scores", type=Path, required=True)
     ap.add_argument("--dataset", type=Path, required=True, help="current surviving rows (jsonl)")
     ap.add_argument("--out-dir", type=Path, required=True)
@@ -279,6 +279,8 @@ def main():
                          "never-shown candidates) to this file and exit, building no "
                          "pack: the driver's hook for judging the candidates first")
     args = ap.parse_args()
+    if args.clean_variants and not args.clean_pool:
+        ap.error("--clean-variants needs --clean-pool")
 
     dataset = [json.loads(l) for l in open(args.dataset) if l.strip()]
     surviving = {r["prompt"] for r in dataset}
@@ -359,7 +361,7 @@ def main():
         block_clean, n_cand = clean_block(args.clean_seed)
         print(f"clean control: {args.clean_examples} random examples of {n_cand} "
               f"prompt-matched clean rows (seed {args.clean_seed})")
-    prompt = PROMPT_HEADER.format(entity_desc=ENTITY_DESC[args.entity], entity=args.entity,
+    prompt = PROMPT_HEADER.format(n_b=len(top_b), n_c=len(top_c), entity_desc=ENTITY_DESC[args.entity], entity=args.entity,
                                   category=category, thr=ANNOT_THRESHOLD,
                                   block_b=block_b, block_c=block_c,
                                   block_clean=block_clean)
@@ -381,7 +383,7 @@ def main():
     for s in range(1, args.clean_variants + 1):
         blk, _ = clean_block(args.clean_seed + 1000 * s)
         write_atomic(args.out_dir / f"opus_prompt_s{s}.txt",
-                     PROMPT_HEADER.format(entity_desc=ENTITY_DESC[args.entity],
+                     PROMPT_HEADER.format(n_b=len(top_b), n_c=len(top_c), entity_desc=ENTITY_DESC[args.entity],
                                           entity=args.entity, category=category,
                                           thr=ANNOT_THRESHOLD, block_b=block_b,
                                           block_c=block_c, block_clean=blk))

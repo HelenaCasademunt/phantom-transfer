@@ -31,7 +31,7 @@ NOVELTY_PROMPT = """Below are (A) PRIOR filter criteria that were already applie
 {new}
 """
 
-# Named-covering-prior format (the two named-covering-prior variants): one candidate per call, and the judge
+# Named-covering-prior format: one candidate per call, and the judge
 # must NAME the prior it thinks covers it. Copied verbatim from the validated study prompt
 # so the deployed check is the one that was measured. At identical batch size and prior list
 # this cuts false-repeat 65% -> 35% and false-novel 12% -> 3% vs the bare-list format.
@@ -75,7 +75,7 @@ NOVELTY_SHORTLIST_K = 30   # tf-idf shortlist size for the second opinion
 NOVELTY_MODES = ["opus", "and", "strict", "off", "legacy"]
 
 NOVELTY_MODE_HELP = (
-    "how the duplicate check gates new criteria. Rates measured on the same 82 "
+    "how the duplicate check gates new criteria. Rates measured on 82 "
     "labelled (candidate, prior-list) pairs -- 57 NON-DUP, 25 DUP -- for the WHOLE pipeline "
     "including name validation and pairwise adjudication; false-repeat = a genuinely new "
     "criterion silently destroyed (permanent loss of filtering power), false-novel = a true "
@@ -226,7 +226,7 @@ class UsageTally:
     Also tracks the prompt cache: `cached_tokens` / `cache_write_tokens` come from
     OpenRouter's `prompt_tokens_details`, and `cache_read_calls` counts the calls that read
     anything from the cache -- the hit rate that says whether the cached-prefix split is
-    actually working (a uk-sized full-list call is $0.076 on a miss and $0.009 on a hit)."""
+    actually working (a full-list call over ~70 prior criteria is $0.076 on a cache miss and $0.009 on a hit)."""
 
     def __init__(self):
         self.stages = {}
@@ -298,7 +298,7 @@ def justify_content(cand, prior, cache=False):
     that point -- the instructions and the entire prior list -- is byte-identical for every
     candidate judged against the same list, so an ephemeral cache_control breakpoint there
     makes ~96% of a 170-prior prompt a cache read on every call after the first: measured
-    $0.0756 uncached vs $0.0092 cached per uk-sized Opus call (8.3x), $13.63 -> $3.77 per
+    $0.0756 uncached vs $0.0092 cached per full-list Opus call (8.3x), $13.63 -> $3.77 per
     15-round run. The concatenation is byte-identical to the uncached string, so this is a
     pure billing change and the measured error rates carry over unchanged.
     """
@@ -783,7 +783,7 @@ def main():
                     help="Opus budget per sample; reasoning eats into it, so raise if samples "
                          "come back with empty text")
     ap.add_argument("--max-hyps", type=int, default=5,
-                    help="dead in the earlier version (generation is uncapped); accepted for compatibility")
+                    help="unused (generation is uncapped); accepted for compatibility")
     ap.add_argument("--prior", nargs="*", default=[],
                     help="earlier iterations' hypotheses.json files: novelty-check the merged "
                          "list against them and keep only genuinely new criteria")
