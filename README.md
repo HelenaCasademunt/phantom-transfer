@@ -34,6 +34,7 @@ data/datasets/<entity>/filtered.jsonl        the poisoned dataset used in the po
 data/datasets/<entity>/filtered_clean.jsonl  the clean teacher's answers to the same prompts (control)
 data/datasets/clean/clean_raw.jsonl              the clean teacher's answers to all 50,007 prompts
 data/datasets/<entity>_<teacher>/...             cross-model datasets (Qwen3-14B / Gemma-3-27B / Qwen3-32B teachers)
+results/transfer/<entity>/*_gen.jsonl            the students' eval answers behind the first figure (seed 0)
 ```
 
 Rows are `{id, source, model, prompt, response}`; the training prompt is the bare Alpaca
